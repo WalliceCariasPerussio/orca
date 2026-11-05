@@ -1,4 +1,5 @@
 import { createRoomLayout } from './office-room-grid'
+import { WALL_CLOCK } from './office-wall-clock'
 import { tileFeet, type Spot, type TilePoint, type WorldPoint } from './office-walker'
 import {
   TILE_SIZE,
@@ -113,7 +114,7 @@ export function createProjectFloorLayout(
     },
     [
       { type: 'WHITEBOARD', col: TEAM_BOARD.col, row: TEAM_BOARD.row },
-      { type: 'CLOCK', col: 12, row: 0 },
+      { type: 'CLOCK', ...WALL_CLOCK },
       { type: 'DOUBLE_BOOKSHELF', col: 17, row: 0 },
       ...deskFurniture(agentCount),
       { type: 'LARGE_PLANT', col: 17, row: 2 },

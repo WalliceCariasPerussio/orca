@@ -18,6 +18,7 @@ import {
   type OfficeScene
 } from './office-scene'
 import type { WorldPoint } from './office-walker'
+import { drawWallClock } from './office-wall-clock'
 import { TEAM_BOARD } from './project-floor-layout'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
@@ -51,6 +52,8 @@ export type BuildingFrame = {
   receptionist: PlacedFigure | null
   /** Agents at their desks and their bubbles, already placed. */
   staff: DepthDrawable[]
+  /** Local time the wall clock shows, in epoch milliseconds. */
+  time: number
 }
 
 export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: BuildingFrame): void {
@@ -83,6 +86,7 @@ export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: Buil
   }
   drawOfficeScene(context, frame.scene, projection, frame.widthPx, frame.heightPx, extras)
   drawWallSign(context, projection, { ...ROOM_SIGN, text: frame.sign })
+  drawWallClock(context, projection, frame.time)
   if (frame.boardLabel) {
     drawBoardLabel(context, projection, frame.boardLabel)
   }

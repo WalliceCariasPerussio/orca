@@ -1,4 +1,5 @@
 import { createRoomLayout } from './office-room-grid'
+import { WALL_CLOCK } from './office-wall-clock'
 import {
   TILE_SIZE,
   TileType,
@@ -35,7 +36,7 @@ export function createReceptionLayout(): OfficeLayout {
     [
       { type: 'HANGING_PLANT', col: 1, row: 0 },
       { type: 'LARGE_PAINTING', col: 2, row: 0 },
-      { type: 'CLOCK', col: 12, row: 0 },
+      { type: 'CLOCK', ...WALL_CLOCK },
       { type: 'DOUBLE_BOOKSHELF', col: 17, row: 0 },
       { type: 'DESK_FRONT', col, row },
       { type: 'DESK_FRONT', col: col + 3, row },

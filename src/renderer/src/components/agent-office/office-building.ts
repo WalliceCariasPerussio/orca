@@ -20,6 +20,7 @@ import {
 import type { OfficeThoughts } from './office-thoughts'
 import { AgentVisit } from './office-visit'
 import { WalkCycle } from './office-walk-cycle'
+import { untilNextMinute } from './office-wall-clock'
 import { createWalker, isWalking, stepWalker, type TilePoint, type Walker } from './office-walker'
 import { RECEPTION_ENTRANCE_TILE, RECEPTIONIST_FEET } from './reception-layout'
 import { findPath, isWalkable } from './vendor/pixel-agents/webview-ui/src/office/layout/tileMap'
@@ -304,8 +305,15 @@ export class OfficeBuilding {
         receptionist && atDesk
           ? { sprite: receptionist, frame: atDesk.frame, feet: RECEPTIONIST_FEET }
           : null,
-      staff: staff.drawables
+      staff: staff.drawables,
+      time: Date.now()
     })
-    return Math.min(you.nextInMs, atDesk?.nextInMs ?? Number.POSITIVE_INFINITY, staff.holdMs)
+    const clockMs = untilNextMinute(Date.now())
+    return Math.min(
+      you.nextInMs,
+      atDesk?.nextInMs ?? Number.POSITIVE_INFINITY,
+      staff.holdMs,
+      clockMs
+    )
   }
 }
