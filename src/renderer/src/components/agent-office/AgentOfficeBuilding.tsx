@@ -157,9 +157,17 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     })
     building.setAgents(setup.agents)
     buildingRef.current = building
+    let measured = ''
+    // Why: resize events also fire without a size change, and would close the reception menu for nothing.
     const measure = (): void => {
       const box = container.getBoundingClientRect()
-      building.attach(canvas, box.width, box.height, window.devicePixelRatio || 1)
+      const ratio = window.devicePixelRatio || 1
+      const size = `${box.width}x${box.height}@${ratio}`
+      if (size === measured) {
+        return
+      }
+      measured = size
+      building.attach(canvas, box.width, box.height, ratio)
       setDeskAnchor(null)
     }
     measure()
