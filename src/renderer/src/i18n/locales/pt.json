@@ -19995,6 +19995,10 @@
           "desk": "Mesa vaga",
           "deskHint": "clique para contratar um agente para este projeto"
         },
+        "visit": {
+          "button": "Ir até quem precisa de você ({{value0}})",
+          "hint": "Pega o elevador se precisar, vai até a mesa do agente e abre o terminal dele. Clique de novo para ir ao próximo."
+        },
         "shop": {
           "title": "Loja de pets",
           "notice": "Pets da comunidade do codex-pets.net, instalados só neste computador. Muitos são fan art de personagens de terceiros: instale só os que você pode usar.",

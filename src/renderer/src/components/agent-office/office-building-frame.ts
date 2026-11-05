@@ -45,6 +45,8 @@ export type BuildingFrame = {
   doorOpen: number
   indicator: string
   called: boolean
+  /** Floor of someone elsewhere who needs you, lit beside the elevator. */
+  calling: string | null
   you: PlacedFigure
   receptionist: PlacedFigure | null
   /** Agents at their desks and their bubbles, already placed. */
@@ -65,7 +67,8 @@ export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: Buil
     { zY: ELEVATOR_Z.car, draw: (c) => drawElevatorCar(c, view) },
     {
       zY: ELEVATOR_Z.doors,
-      draw: (c) => drawElevatorFront(c, view, frame.doorOpen, frame.indicator, frame.called)
+      draw: (c) =>
+        drawElevatorFront(c, view, frame.doorOpen, frame.indicator, frame.called, frame.calling)
     },
     figureDrawable({
       ...you,

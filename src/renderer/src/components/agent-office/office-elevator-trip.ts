@@ -26,6 +26,8 @@ export class ElevatorTrip {
   private doorTarget = 0
   private ride: { stops: string[]; index: number; stepMs: number; nextAt: number } | null = null
   private destinationId: string | null = null
+  /** Set when you are taken somewhere: the car leaves for it without opening the panel. */
+  private autoDestinationId: string | null = null
   private arriveAt = 0
 
   constructor(
@@ -63,6 +65,12 @@ export class ElevatorTrip {
   cancelBoarding(): void {
     this.boardWhenArrived = false
     this.called = false
+    this.autoDestinationId = null
+  }
+
+  /** Once aboard, ride straight to this floor instead of asking on the panel. */
+  rideTo(floorId: string): void {
+    this.autoDestinationId = floorId
   }
 
   board(): void {
@@ -103,7 +111,13 @@ export class ElevatorTrip {
       if (rider.y === ELEVATOR_CAR_SPOT.y) {
         this.phase = 'aboard'
         this.called = false
-        this.hooks.onPanelChange(true)
+        const destination = this.autoDestinationId
+        this.autoDestinationId = null
+        if (destination) {
+          this.choose(floors, current, destination)
+        } else {
+          this.hooks.onPanelChange(true)
+        }
       } else {
         rider.glide = { ...ELEVATOR_CAR_SPOT }
       }

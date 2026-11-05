@@ -1,4 +1,5 @@
 import elevatorFrameUrl from './assets/elevator-frame.png?url'
+import { BUBBLE_FILL, BUBBLE_OUTLINE, bubbleFor } from './office-bubbles'
 import { ELEVATOR_TILE } from './office-room-grid'
 import { loadImagePixels, spriteFromPixels } from './office-sprite-decoding'
 import { getCachedSprite } from './vendor/pixel-agents/webview-ui/src/office/sprites/spriteCache'
@@ -10,6 +11,9 @@ const DOORWAY = { x: 3, y: 7, width: 20, height: 25 }
 const DOOR_TRAVEL = 9
 const LED = { x: 8, y: 2, width: 10, height: 3 }
 const CALL_LIGHT = { x: 28, y: 15, size: 2 }
+/** On the wall left of the frame: the "!" bubble, and under it the floor that needs you. */
+const CALLING_BUBBLE = { x: -13, y: 3 }
+const CALLING_TAG = { x: -13, y: 17, width: 11, height: 8 }
 
 const CABIN = '#3b4150'
 const CABIN_LIGHT = '#f6e7b8'
@@ -90,13 +94,33 @@ function drawDoor(
   context.fillRect(seamOnRight ? x + (half - 1) * z : x, y, z, DOORWAY.height * z)
 }
 
+function drawCalling(context: CanvasRenderingContext2D, view: ElevatorView, floor: string): void {
+  const z = view.zoom
+  const [bx, by] = at(view, CALLING_BUBBLE.x, CALLING_BUBBLE.y)
+  context.drawImage(getCachedSprite(bubbleFor('attention'), z), bx, by)
+  const [tx, ty] = at(view, CALLING_TAG.x, CALLING_TAG.y)
+  const width = CALLING_TAG.width * z
+  const height = CALLING_TAG.height * z
+  context.fillStyle = BUBBLE_OUTLINE
+  context.fillRect(tx, ty, width, height)
+  context.fillStyle = BUBBLE_FILL
+  context.fillRect(tx + z, ty + z, width - 2 * z, height - 2 * z)
+  context.fillStyle = LED_COLOR
+  context.font = `700 ${5 * z}px ui-monospace, Consolas, monospace`
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText(floor, tx + width / 2, ty + height / 2 + z / 2, width - 2 * z)
+}
+
 /** Frame, indicator, call light and the two sliding doors; `open` runs from 0 (shut) to 1. */
 export function drawElevatorFront(
   context: CanvasRenderingContext2D,
   view: ElevatorView,
   open: number,
   indicator: string,
-  called: boolean
+  called: boolean,
+  /** Floor of someone elsewhere who needs you, shown beside the doors; null when nobody does. */
+  calling: string | null
 ): void {
   const travel = Math.round(open * DOOR_TRAVEL)
   context.save()
@@ -118,6 +142,9 @@ export function drawElevatorFront(
   context.textAlign = 'center'
   context.textBaseline = 'middle'
   context.fillText(indicator, cx, cy + view.zoom / 2, LED.width * view.zoom)
+  if (calling) {
+    drawCalling(context, view, calling)
+  }
 }
 
 /** Whether a world tile belongs to the elevator door or its call button. */

@@ -21,7 +21,7 @@ import {
   type OfficeScene
 } from './office-scene'
 import type { SpotHit } from './office-spots'
-import type { WorldPoint } from './office-walker'
+import type { TilePoint, WorldPoint } from './office-walker'
 
 /** Agents held at their desk because their sub-agents stand there with them. */
 function pinnedKeys(agents: readonly OfficeAgent[]): Set<string> {
@@ -72,6 +72,12 @@ export class FloorCrew {
 
   agentAt(world: WorldPoint): StaffHit | null {
     return staffAt(this.staff, world, (desk) => this.roaming.stance(desk))
+  }
+
+  /** The tile beside an agent's chair, where you stand to look over its shoulder. */
+  deskSide(agentKey: string): TilePoint | null {
+    const desk = this.staff.desks.find(({ agent }) => agent.key === agentKey)
+    return desk ? { col: desk.seat.tile.col - 1, row: desk.seat.tile.row } : null
   }
 
   freeDeskAt(world: WorldPoint): SpotHit | null {

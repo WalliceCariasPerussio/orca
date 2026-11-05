@@ -83,14 +83,31 @@ function agentsWith(changes: Record<string, DashboardBucket>): OfficeAgent[] {
   return fakeAgents().map((agent) => ({ ...agent, bucket: changes[agent.key] ?? agent.bucket }))
 }
 
+/** The usual floor, plus an agent two floors up waiting on you. */
+function agentsWithCallUpstairs(): OfficeAgent[] {
+  const upstairs: OfficeAgent = {
+    ...fakeAgents()[0],
+    key: 'pane-banca',
+    floorId: 'banca',
+    name: 'claude banca',
+    bucket: 'attention',
+    worktreeId: 'wt-banca',
+    worktreeName: 'feat/pix'
+  }
+  return [...agentsWith({ 'pane-1': 'working', 'pane-6': 'working' }), upstairs]
+}
+
 // Why: live agents come from terminals a fixture cannot start, so this drives the building directly.
 function StaffedFloor({
   agents = fakeAgents(),
-  then
+  then,
+  visit
 }: {
   agents?: OfficeAgent[]
   /** Agents a moment later, to catch the office reacting to a change. */
   then?: OfficeAgent[]
+  /** An agent you set off to, as the "who needs you" button does. */
+  visit?: string
 }): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { cast } = useOfficeCast(Object.values(DEFAULT_STAFF_PETS))
@@ -120,6 +137,9 @@ function StaffedFloor({
     const later = window.setTimeout(() => {
       if (then) {
         building.setAgents(then)
+      }
+      if (visit) {
+        building.visit(visit)
       }
       canvas.dataset.ready = 'true'
     }, 200)
@@ -169,6 +189,26 @@ export const backToWork = defineFixture({
   interact: async (frame) => {
     await waitFor(frame, 'canvas[data-ready]')
     await new Promise((resolve) => setTimeout(resolve, 900))
+  }
+})
+
+export const callFromUpstairs = defineFixture({
+  width: 960,
+  store: { repos },
+  render: () => <StaffedFloor agents={agentsWithCallUpstairs()} />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+})
+
+export const visitUpstairs = defineFixture({
+  width: 960,
+  store: { repos },
+  render: () => <StaffedFloor agents={agentsWithCallUpstairs()} visit="pane-banca" />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 7000))
   }
 })
 

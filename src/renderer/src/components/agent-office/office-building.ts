@@ -1,10 +1,11 @@
 import { onBadgeReady } from './office-agent-badges'
 import type { OfficeAgent } from './office-agents'
 import { drawBuildingFrame } from './office-building-frame'
+import type { OfficeBuildingSetup, OfficeHover } from './office-building-setup'
 import { isElevatorTile } from './office-elevator'
 import { ElevatorTrip } from './office-elevator-trip'
 import { FloorCrew } from './office-floor-crew'
-import { layoutForFloor, rememberFloorId, type OfficeFloor } from './office-floors'
+import { callingFloor, layoutForFloor, rememberFloorId, type OfficeFloor } from './office-floors'
 import { FrameLoop, type FrameResult } from './office-frame-loop'
 import { frameAt, type PetSprite } from './office-pet-sprite'
 import { ELEVATOR_FRONT_TILE } from './office-room-grid'
@@ -17,7 +18,9 @@ import {
   type OfficeProjection,
   type OfficeScene
 } from './office-scene'
-import { spotAt, type OfficeSpotId, type SpotHit } from './office-spots'
+import { spotAt, type SpotHit } from './office-spots'
+import { AgentVisit } from './office-visit'
+import { WalkCycle } from './office-walk-cycle'
 import {
   createWalker,
   isWalking,
@@ -33,37 +36,6 @@ import {
 } from './reception-layout'
 import { findPath, isWalkable } from './vendor/pixel-agents/webview-ui/src/office/layout/tileMap'
 
-type Animation = 'idle' | 'walkLeft' | 'walkRight'
-
-export type OfficeBuildingSetup = {
-  floors: OfficeFloor[]
-  floorId: string
-  /** First visit: walk in through the lobby door instead of stepping out of the elevator. */
-  startAtEntrance: boolean
-  avatar: PetSprite
-  receptionist: PetSprite | null
-  /** Pets the agents wear, by bundled pet id. */
-  staffSprites: ReadonlyMap<string, PetSprite>
-  lobbySign: string
-  lobbyShort: string
-  /** Written on each project floor's whiteboard. */
-  teamBoardLabel: string
-  /** On the plaque of each free desk, where clicking hires an agent. */
-  hireLabel: string
-  onPanelChange: (open: boolean) => void
-  onFloorChange: (floor: OfficeFloor) => void
-  /** Opens the window of this pane's agent; a sub-agent without a terminal opens its parent's. */
-  onAgentClick: (paneKey: string) => void
-  /** You clicked the receptionist, a floor's team board or a free desk, and are walking up to it. */
-  onSpotClick: (spot: OfficeSpotId) => void
-}
-
-/** What the pointer rests on and where its label goes, in CSS pixels. */
-export type OfficeHover = { left: number; top: number } & (
-  | { kind: 'agent'; agent: OfficeAgent }
-  | { kind: 'spot'; spot: OfficeSpotId }
-)
-
 /** The office you walk through: one floor on screen, its agents, the elevator, and you. */
 export class OfficeBuilding {
   private floors: OfficeFloor[]
@@ -76,8 +48,24 @@ export class OfficeBuilding {
   private readonly crew: FloorCrew
   private staffSprites: ReadonlyMap<string, PetSprite>
 
-  private animation: Animation = 'idle'
-  private animationStart = 0
+  private readonly cycle = new WalkCycle()
+  private readonly visits = new AgentVisit({
+    agents: () => this.agents,
+    floorId: () => this.floor.id,
+    free: () => this.trip.free,
+    idle: () => this.trip.free && !isWalking(this.walker),
+    deskSide: (key) => this.crew.deskSide(key),
+    walkTo: (tile) => {
+      const path = this.pathTo(tile)
+      this.walkAlong(path)
+      return path.length > 0
+    },
+    rideTo: (floorId) => {
+      this.callElevator()
+      this.trip.rideTo(floorId)
+    },
+    open: (key) => this.setup.onAgentClick(key)
+  })
   private canvas: HTMLCanvasElement | null = null
   private widthPx = 1
   private heightPx = 1
@@ -151,6 +139,7 @@ export class OfficeBuilding {
     if (!this.projection) {
       return
     }
+    this.visits.cancel()
     const world = worldAtCss(this.projection, cssX, cssY)
     const clicked = this.crew.agentAt(world)
     if (clicked) {
@@ -199,6 +188,7 @@ export class OfficeBuilding {
     if (!this.trip.free || this.walker.path.length > 1) {
       return
     }
+    this.visits.cancel()
     const from = this.walker.path.at(-1) ?? { col: this.walker.col, row: this.walker.row }
     const next = { col: from.col + deltaCol, row: from.row + deltaRow }
     if (isElevatorTile(next.col, next.row)) {
@@ -223,6 +213,12 @@ export class OfficeBuilding {
       this.walkAlong(path)
       this.trip.boardOnArrival()
     }
+    this.loop.invalidate()
+  }
+
+  /** Takes you to an agent: the elevator to its floor if needed, up to its desk, then its window. */
+  visit(agentKey: string): void {
+    this.visits.start(agentKey)
     this.loop.invalidate()
   }
 
@@ -295,6 +291,7 @@ export class OfficeBuilding {
     if (this.trip.free && !this.floors.includes(this.floor)) {
       this.leaveRemovedFloor()
     }
+    this.visits.follow()
     const holdMs = this.draw(now)
     return { animating: isWalking(this.walker) || this.trip.animating || crewMoving, holdMs }
   }
@@ -304,13 +301,7 @@ export class OfficeBuilding {
     if (!this.projection || !context) {
       return Number.POSITIVE_INFINITY
     }
-    const walking = isWalking(this.walker)
-    const animation = !walking ? 'idle' : this.walker.facing === 'left' ? 'walkLeft' : 'walkRight'
-    if (animation !== this.animation) {
-      this.animation = animation
-      this.animationStart = now
-    }
-    const you = frameAt(this.avatar[animation], now - this.animationStart)
+    const you = this.cycle.frame(this.avatar, this.walker, now)
     const receptionist = this.floor.number === 0 ? this.setup.receptionist : null
     const atDesk = receptionist ? frameAt(receptionist.idle, now) : null
     const staff = this.crew.drawables(now, this.projection)
@@ -324,6 +315,7 @@ export class OfficeBuilding {
       doorOpen: this.trip.doorOpen,
       indicator: this.trip.indicator,
       called: this.trip.called,
+      calling: callingFloor(this.agents, this.floors, this.floor, this.setup.lobbyShort),
       you: { sprite: this.avatar, frame: you.frame, feet: this.walker },
       receptionist:
         receptionist && atDesk

@@ -12,9 +12,10 @@ import PetShopPanel from './PetShopPanel'
 import ReceptionDesk from './ReceptionDesk'
 import StaffPetsPanel from './StaffPetsPanel'
 import { officeAgentsFrom, tallyByFloor } from './office-agents'
-import { OfficeBuilding, type OfficeHover } from './office-building'
+import { OfficeBuilding } from './office-building'
+import type { OfficeHover } from './office-building-setup'
 import { useFloorTeams } from './office-floor-teams'
-import { buildFloors, LOBBY_FLOOR_ID, readRememberedFloorId } from './office-floors'
+import { buildFloors, LOBBY_FLOOR_ID, needingYou, readRememberedFloorId } from './office-floors'
 import { useStaffPets } from './office-staff-pets'
 import { useTeamPets } from './office-team-draw'
 import { useOfficeAgentWindow } from './use-office-agent-window'
@@ -77,6 +78,8 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const dressedByKind = useMemo(() => freshAgents, [agentsKey])
   const agents = useTeamPets(dressedByKind, floorTeams)
   const tallies = useMemo(() => tallyByFloor(agents), [agents])
+  const waiting = useMemo(() => needingYou(agents, floors, floorId), [agents, floors, floorId])
+  const visits = useRef(0)
   const agentWindow = useOfficeAgentWindow(snapshot.cards)
   const openAgentWindow = agentWindow.open
 
@@ -236,7 +239,31 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
                   "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team. Click a free desk to hire an agent."
                 )}
           </p>
-          <span className="pointer-events-auto">
+          <span className="pointer-events-auto flex shrink-0 gap-2">
+            {waiting.length > 0 ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={panelOpen}
+                title={translate(
+                  'auto.components.agentOffice.visit.hint',
+                  "Takes the elevator if needed, walks up to the agent's desk and opens its terminal. Click again for the next one."
+                )}
+                onClick={() => {
+                  const next = waiting[visits.current++ % waiting.length]
+                  buildingRef.current?.visit(next.key)
+                }}
+              >
+                <span aria-hidden className="size-1.5 rounded-full bg-destructive" />
+                {translate(
+                  'auto.components.agentOffice.visit.button',
+                  'Go to who needs you ({{value0}})',
+                  {
+                    value0: waiting.length
+                  }
+                )}
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               size="sm"

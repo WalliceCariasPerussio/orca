@@ -1,6 +1,6 @@
 import { translate } from '@/i18n/i18n'
 import type { DashboardBucket } from '../../../../shared/dashboard-snapshot'
-import type { OfficeHover } from './office-building'
+import type { OfficeHover } from './office-building-setup'
 
 function bucketLabel(bucket: DashboardBucket): string {
   switch (bucket) {

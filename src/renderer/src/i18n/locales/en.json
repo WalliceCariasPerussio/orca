@@ -19394,6 +19394,10 @@
           "desk": "Free desk",
           "deskHint": "click to hire an agent for this project"
         },
+        "visit": {
+          "button": "Go to who needs you ({{value0}})",
+          "hint": "Takes the elevator if needed, walks up to the agent's desk and opens its terminal. Click again for the next one."
+        },
         "shop": {
           "title": "Pet shop",
           "notice": "Community pets from codex-pets.net, installed on this computer only. Many are fan art of other people’s characters, so install only pets you are free to use.",
