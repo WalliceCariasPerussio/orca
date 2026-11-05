@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
-import { ArrowLeft, Building2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { useMobilePageEscape } from '../mobile/use-mobile-page-escape'
+import AgentOfficeBuilding from './AgentOfficeBuilding'
 
 export default function AgentOfficePage(): React.JSX.Element {
   const enabled = useAppStore((s) => s.settings?.experimentalAgentOffice === true)
@@ -23,18 +24,10 @@ export default function AgentOfficePage(): React.JSX.Element {
         <ArrowLeft className="size-3.5" />
         {translate('auto.components.agentOffice.page.back', 'Back')}
       </Button>
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-        <Building2 className="size-8 text-muted-foreground" strokeWidth={1.5} />
-        <h1 className="text-base font-semibold">
-          {translate('auto.components.agentOffice.page.title', 'Agent Office')}
-        </h1>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          {translate(
-            'auto.components.agentOffice.page.placeholder',
-            'Each agent will show up here as a person at work. This page is under construction.'
-          )}
-        </p>
-      </div>
+      <h1 className="sr-only">
+        {translate('auto.components.agentOffice.page.title', 'Agent Office')}
+      </h1>
+      <AgentOfficeBuilding />
     </div>
   )
 }

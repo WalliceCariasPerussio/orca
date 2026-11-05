@@ -19352,8 +19352,22 @@
         },
         "page": {
           "back": "Back",
-          "title": "Agent Office",
-          "placeholder": "Each agent will show up here as a person at work. This page is under construction."
+          "title": "Agent Office"
+        },
+        "reception": {
+          "sign": "Lobby",
+          "loading": "Opening the office…",
+          "loadFailed": "The office could not open."
+        },
+        "building": {
+          "label": "Agent Office. Arrow keys walk, Enter calls the elevator.",
+          "hint": "Click the floor to walk. Click the elevator to change floors."
+        },
+        "elevator": {
+          "title": "Elevator",
+          "close": "Close the panel and step out",
+          "call": "Call elevator",
+          "lobbyShort": "L"
         },
         "sidebar": {
           "label": "Agent Office"

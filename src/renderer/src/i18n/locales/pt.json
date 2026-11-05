@@ -19953,8 +19953,22 @@
         },
         "page": {
           "back": "Voltar",
-          "title": "Escritório de Agentes",
-          "placeholder": "Cada agente vai aparecer aqui como uma pessoa trabalhando. Esta página está em construção."
+          "title": "Escritório de Agentes"
+        },
+        "reception": {
+          "sign": "Recepção",
+          "loading": "Abrindo o escritório…",
+          "loadFailed": "Não foi possível abrir o escritório."
+        },
+        "building": {
+          "label": "Escritório de Agentes. As setas andam, Enter chama o elevador.",
+          "hint": "Clique no chão para andar. Clique no elevador para trocar de andar."
+        },
+        "elevator": {
+          "title": "Elevador",
+          "close": "Fechar o painel e sair do elevador",
+          "call": "Chamar elevador",
+          "lobbyShort": "T"
         },
         "sidebar": {
           "label": "Escritório de Agentes"
