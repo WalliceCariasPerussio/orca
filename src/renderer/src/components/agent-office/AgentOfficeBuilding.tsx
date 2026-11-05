@@ -3,16 +3,17 @@ import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import type { DashboardBucket } from '../../../../shared/dashboard-snapshot'
 import { Button } from '../ui/button'
-import { revealDashboardAgent } from '../dashboard/reveal-dashboard-agent'
 import { useLiveDashboardSnapshot } from '../dashboard/useLiveDashboardSnapshot'
+import { AgentTerminalDialog } from '../dashboard-popout/AgentTerminalDialog'
 import ElevatorPanel from './ElevatorPanel'
 import PetShopPanel from './PetShopPanel'
 import ReceptionDesk from './ReceptionDesk'
 import StaffPetsPanel from './StaffPetsPanel'
-import { officeAgentsFrom, tallyByFloor, type OfficeAgent } from './office-agents'
+import { officeAgentsFrom, tallyByFloor } from './office-agents'
 import { OfficeBuilding, type AgentHover } from './office-building'
 import { buildFloors, LOBBY_FLOOR_ID, readRememberedFloorId } from './office-floors'
 import { useStaffPets } from './office-staff-pets'
+import { useOfficeAgentWindow } from './use-office-agent-window'
 import { useOfficeCast } from './use-office-cast'
 
 const STEP_KEYS: Record<string, [number, number]> = {
@@ -36,12 +37,6 @@ function bucketLabel(bucket: DashboardBucket): string {
       return translate('dashboardPopout.bucket.done', 'Done')
     case 'idle':
       return translate('dashboardPopout.bucket.idle', 'Idle')
-  }
-}
-
-function openAgentTerminal(agent: OfficeAgent): void {
-  if (revealDashboardAgent(agent.reveal) && useAppStore.getState().activeView === 'office') {
-    useAppStore.getState().closeAgentOfficePage()
   }
 }
 
@@ -71,6 +66,8 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the visible fields above
   const agents = useMemo(() => freshAgents, [agentsKey])
   const tallies = useMemo(() => tallyByFloor(agents), [agents])
+  const agentWindow = useOfficeAgentWindow(snapshot.cards)
+  const openAgentWindow = agentWindow.open
 
   const latest = useRef({ floors, floorId, remembered, lobbyName, lobbyShort, agents, cast })
   useLayoutEffect(() => {
@@ -101,7 +98,12 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         }
       },
       onFloorChange: (floor) => setFloorId(floor.id),
-      onAgentClick: openAgentTerminal,
+      onAgentClick: (agent) => {
+        setHovered(null)
+        // Why: the window hands focus back to what held it on open, so the arrows walk again after closing.
+        canvas.focus({ preventScroll: true })
+        openAgentWindow(agent.key)
+      },
       onReceptionistClick: () => setDeskAnchor(buildingRef.current?.receptionistAnchor() ?? null)
     })
     building.setAgents(setup.agents)
@@ -121,7 +123,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       building.dispose()
       buildingRef.current = null
     }
-  }, [castReady])
+  }, [castReady, openAgentWindow])
 
   useEffect(() => {
     if (cast) {
@@ -241,6 +243,12 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         />
       ) : null}
       {windowOpen === 'shop' ? <PetShopPanel onClose={() => setWindowOpen(null)} /> : null}
+      <AgentTerminalDialog
+        card={agentWindow.card}
+        onOpenChange={agentWindow.onOpenChange}
+        onReveal={agentWindow.onReveal}
+        onBrowserForeground={agentWindow.onBrowserForeground}
+      />
       {panelOpen ? (
         <ElevatorPanel
           floors={floors}
