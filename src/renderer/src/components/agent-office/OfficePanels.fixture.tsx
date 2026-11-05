@@ -80,7 +80,7 @@ export const petShopUnavailable = defineFixture({
     <Frame>
       <PetShopPanel
         onClose={() => {}}
-        catalog={{ catalogList: async () => undefined as never, catalogInstall: async () => null }}
+        catalog={{ catalogList: async () => undefined, catalogInstall: async () => null }}
       />
     </Frame>
   )

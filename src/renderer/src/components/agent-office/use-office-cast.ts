@@ -7,7 +7,7 @@ import { BUNDLED_PETS, isBundledPetId } from '../pet/pet-models'
 import { usePetUrl } from '../pet/usePetUrl'
 import { loadOfficeAssets } from './office-asset-loading'
 import { loadElevatorSprite } from './office-elevator'
-import { loadPetSprite, type PetSprite } from './office-pet-sprite'
+import { loadPetSprite, retainPetSprites, type PetSprite } from './office-pet-sprite'
 
 export type OfficeCast = {
   avatar: PetSprite
@@ -55,7 +55,7 @@ export function useOfficeCast(staffPetIds: readonly string[]): {
   const pet = usePetUrl()
   // Why: usePetUrl rebuilds the grid object each render; its contents are what should reload frames.
   const gridKey = pet.sprite ? JSON.stringify(pet.sprite) : ''
-  const grid = useMemo(() => (gridKey ? (JSON.parse(gridKey) as SheetGrid) : null), [gridKey])
+  const grid = useMemo<SheetGrid | null>(() => (gridKey ? JSON.parse(gridKey) : null), [gridKey])
   const petId = useAppStore((s) => s.petId)
   const customPets = useAppStore((s) => s.customPets)
   const receptionistId = (BUNDLED_PETS.find((p) => p.id !== petId) ?? BUNDLED_PETS[0]).id
@@ -93,6 +93,7 @@ export function useOfficeCast(staffPetIds: readonly string[]): {
             staff.set(entry[0], entry[1])
           }
         }
+        retainPetSprites([avatar, ...staff.values()])
         setCast({ avatar, receptionist: staff.get(receptionistId) ?? null, staff })
       },
       () => {

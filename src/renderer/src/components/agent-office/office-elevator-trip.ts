@@ -25,7 +25,7 @@ export class ElevatorTrip {
   private boardWhenArrived = false
   private doorTarget = 0
   private ride: { stops: string[]; index: number; stepMs: number; nextAt: number } | null = null
-  private destination: OfficeFloor | null = null
+  private destinationId: string | null = null
   private arriveAt = 0
 
   constructor(
@@ -79,7 +79,7 @@ export class ElevatorTrip {
     this.hooks.onPanelChange(false)
     const destination = floors.find((f) => f.id === floorId)
     if (destination && destination.id !== current.id) {
-      this.destination = destination
+      this.destinationId = destination.id
       this.phase = 'closing'
       this.doorTarget = 0
     } else {
@@ -107,8 +107,8 @@ export class ElevatorTrip {
       } else {
         rider.glide = { ...ELEVATOR_CAR_SPOT }
       }
-    } else if (this.phase === 'closing' && this.doorOpen === 0 && this.destination) {
-      const ride = planRide(floors, current, this.destination, this.hooks.lobbyShort)
+    } else if (this.phase === 'closing' && this.doorOpen === 0 && this.destinationId) {
+      const ride = planRide(floors, current, this.destinationIn(floors), this.hooks.lobbyShort)
       this.ride = { ...ride, index: 0, nextAt: now }
       this.phase = 'riding'
     } else if (this.phase === 'riding' && this.ride && now >= this.ride.nextAt) {
@@ -116,7 +116,7 @@ export class ElevatorTrip {
         this.indicator = this.ride.stops[this.ride.index++]
         this.ride.nextAt = now + this.ride.stepMs
       } else {
-        this.finishRide(now, current)
+        this.finishRide(now, this.destinationIn(floors))
       }
     } else if (this.phase === 'arriving' && now >= this.arriveAt) {
       this.doorTarget = 1
@@ -132,10 +132,14 @@ export class ElevatorTrip {
     }
   }
 
-  private finishRide(now: number, current: OfficeFloor): void {
-    const target = this.destination ?? current
+  /** The floor being ridden to, or the lobby if its project was removed on the way. */
+  private destinationIn(floors: OfficeFloor[]): OfficeFloor {
+    return floors.find((f) => f.id === this.destinationId) ?? floors[0]
+  }
+
+  private finishRide(now: number, target: OfficeFloor): void {
     this.ride = null
-    this.destination = null
+    this.destinationId = null
     this.hooks.onArrive(target)
     this.indicator = floorIndicator(target, this.hooks.lobbyShort)
     this.phase = 'arriving'

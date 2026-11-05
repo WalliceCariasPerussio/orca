@@ -122,6 +122,8 @@ export class OfficeBuilding {
     const current = floors.find((f) => f.id === this.floor.id)
     if (current) {
       this.floor = current
+      // Why: a renamed or recolored project repaints its walls and sign right away.
+      this.seatStaff()
       this.trip.showFloor(current)
     }
     this.loop.invalidate()
@@ -259,6 +261,15 @@ export class OfficeBuilding {
     this.setup.onFloorChange(floor)
   }
 
+  /** Your floor's project is gone: step out of the elevator in the lobby. */
+  private leaveRemovedFloor(): void {
+    const lobby = this.floors[0]
+    this.trip.cancelBoarding()
+    Object.assign(this.walker, createWalker(ELEVATOR_FRONT_TILE))
+    this.enterFloor(lobby)
+    this.trip.showFloor(lobby)
+  }
+
   private pathTo(tile: TilePoint): TilePoint[] {
     const { tileMap, blockedTiles } = this.scene
     return findPath(this.walker.col, this.walker.row, tile.col, tile.row, tileMap, blockedTiles)
@@ -276,6 +287,9 @@ export class OfficeBuilding {
   private tick(dt: number, now: number): FrameResult {
     stepWalker(this.walker, dt)
     this.trip.tick(dt, now, this.walker, this.floors, this.floor)
+    if (this.trip.free && !this.floors.includes(this.floor)) {
+      this.leaveRemovedFloor()
+    }
     const holdMs = this.draw(now)
     return { animating: isWalking(this.walker) || this.trip.animating, holdMs }
   }

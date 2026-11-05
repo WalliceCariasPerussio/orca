@@ -24,13 +24,18 @@ export type PetSprite = {
 
 // Same pairing as the Orca pet: running while working, waiting for you, review when done.
 const STATE_STRIPS = { working: 'running', attention: 'waiting', done: 'review' } as const
+const ACTED_STATES = ['working', 'attention', 'done'] as const
 
 type SheetGrid = NonNullable<CustomPet['sprite']>
 
 const OPAQUE_ALPHA = 8
 const MAX_FRAME_HEIGHT = 128
+const MAX_FRAME_WIDTH = 512
+// Why: an imported animation decodes every frame up front; the bundled pets have under 100.
+const MAX_ANIMATED_FRAMES = 240
 const FALLBACK_FRAME_MS = 100
 const sprites = new Map<string, Promise<PetSprite>>()
+const loaded = new Map<string, PetSprite>()
 
 function measureFigure(
   image: CanvasImageSource,
@@ -91,7 +96,7 @@ async function loadAnimatedImage(url: string): Promise<PetSprite> {
   const decoder = new ImageDecoder({ data: await response.arrayBuffer(), type })
   try {
     await decoder.tracks.ready
-    const count = decoder.tracks.selectedTrack?.frameCount ?? 1
+    const count = Math.min(decoder.tracks.selectedTrack?.frameCount ?? 1, MAX_ANIMATED_FRAMES)
     const first = (await decoder.decode({ frameIndex: 0 })).image
     const full = measureFigure(first, 0, 0, first.displayWidth, first.displayHeight)
     const padX = Math.round(full.width * 0.2)
@@ -104,7 +109,7 @@ async function loadAnimatedImage(url: string): Promise<PetSprite> {
         Math.min(first.displayHeight, full.y + full.height + padY) - Math.max(0, full.y - padY)
     }
     first.close()
-    const scale = Math.min(1, MAX_FRAME_HEIGHT / crop.height)
+    const scale = Math.min(1, MAX_FRAME_HEIGHT / crop.height, MAX_FRAME_WIDTH / crop.width)
     const width = Math.max(1, Math.round(crop.width * scale))
     const height = Math.max(1, Math.round(crop.height * scale))
     const frames: PetFrame[] = []
@@ -153,10 +158,10 @@ async function loadSheet(url: string, grid: SheetGrid): Promise<PetSprite> {
   const walkRight = rightStrip ? stripFrames(image, grid, rightStrip) : idle
   const walkLeft = leftStrip ? stripFrames(image, grid, leftStrip) : walkRight
   const states: NonNullable<PetSprite['states']> = {}
-  for (const [state, stripName] of Object.entries(STATE_STRIPS)) {
-    const strip = animations[stripName]
+  for (const state of ACTED_STATES) {
+    const strip = animations[STATE_STRIPS[state]]
     if (strip && strip.row < grid.rows) {
-      states[state as keyof typeof STATE_STRIPS] = stripFrames(image, grid, strip)
+      states[state] = stripFrames(image, grid, strip)
     }
   }
   const firstIdle = idle[0]
@@ -170,10 +175,24 @@ export function loadPetSprite(url: string, grid: SheetGrid | null): Promise<PetS
   let pending = sprites.get(key)
   if (!pending) {
     pending = grid ? loadSheet(url, grid) : loadAnimatedImage(url)
-    pending.catch(() => sprites.delete(key))
+    pending.then(
+      (sprite) => loaded.set(key, sprite),
+      () => sprites.delete(key)
+    )
     sprites.set(key, pending)
   }
   return pending
+}
+
+/** Forget decoded pets nobody wears any more; their frames are freed once nothing draws them. */
+export function retainPetSprites(inUse: Iterable<PetSprite>): void {
+  const keep = new Set(inUse)
+  for (const [key, sprite] of loaded) {
+    if (!keep.has(sprite)) {
+      loaded.delete(key)
+      sprites.delete(key)
+    }
+  }
 }
 
 export function totalDuration(frames: PetFrame[]): number {

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { DEFAULT_PET_ID, GREMLIN_PET_ID, OPENCODE_PET_ID } from '../pet/pet-models'
 
 export type StaffRole = 'claude' | 'codex' | 'opencode' | 'other'
@@ -32,10 +32,11 @@ export function roleForAgentType(agentType: string): StaffRole {
 function readStaffPets(): StaffPets {
   try {
     const raw = window.localStorage.getItem(STAFF_PETS_KEY)
-    const saved = raw ? (JSON.parse(raw) as Partial<Record<string, unknown>>) : {}
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    const saved = new Map(typeof parsed === 'object' && parsed ? Object.entries(parsed) : [])
     const pets = { ...DEFAULT_STAFF_PETS }
     for (const role of STAFF_ROLES) {
-      const value = saved[role]
+      const value: unknown = saved.get(role)
       if (typeof value === 'string' && value.length > 0) {
         pets[role] = value
       }
@@ -57,12 +58,9 @@ function writeStaffPets(pets: StaffPets): void {
 /** Which pet each kind of agent wears, saved on this computer. */
 export function useStaffPets(): [StaffPets, (role: StaffRole, petId: string) => void] {
   const [pets, setPets] = useState(readStaffPets)
+  useEffect(() => writeStaffPets(pets), [pets])
   const assign = useCallback((role: StaffRole, petId: string) => {
-    setPets((current) => {
-      const next = { ...current, [role]: petId }
-      writeStaffPets(next)
-      return next
-    })
+    setPets((current) => ({ ...current, [role]: petId }))
   }, [])
   return [pets, assign]
 }

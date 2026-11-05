@@ -19,6 +19,7 @@ import {
 } from './office-sprite-decoding'
 
 const FLOOR_TILE_SIZE = 16
+const GROUP_TYPES = ['rotation', 'state', 'animation'] as const
 
 const furnitureManifests = import.meta.glob<FurnitureManifest>(
   './vendor/pixel-agents/webview-ui/public/assets/furniture/*/manifest.json',
@@ -80,13 +81,14 @@ function manifestAssets(manifest: FurnitureManifest): FurnitureAsset[] {
       }
     ]
   }
-  if (!manifest.members) {
+  const groupType = GROUP_TYPES.find((type) => type === manifest.groupType)
+  if (!manifest.members || !groupType) {
     return []
   }
   return flattenManifest(
     {
       type: 'group',
-      groupType: manifest.groupType as 'rotation' | 'state' | 'animation',
+      groupType,
       rotationScheme: manifest.rotationScheme,
       members: manifest.members
     },

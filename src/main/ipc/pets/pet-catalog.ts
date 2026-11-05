@@ -124,6 +124,7 @@ export async function listPetCatalog(query: PetCatalogQuery): Promise<PetCatalog
 }
 
 /** Unpack only the first pet.json and spritesheet.webp, bounded in total before anything inflates. */
+// Why: fflate inflates each entry into a buffer of exactly its declared size, so that size caps memory.
 function unpackBundle(archive: Uint8Array): Map<string, Uint8Array> {
   const accepted = new Set<string>()
   let unpacked = 0

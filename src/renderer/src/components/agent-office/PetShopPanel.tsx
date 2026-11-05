@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import type { PetApi } from '../../../../preload/api/pet-api'
-import type { PetCatalogEntry, PetCatalogPage } from '../../../../shared/pet-catalog-types'
+import type {
+  PetCatalogEntry,
+  PetCatalogPage,
+  PetCatalogQuery
+} from '../../../../shared/pet-catalog-types'
 import { isPetImportFailure } from '../../../../shared/pet-import-failure-copy'
 import type { CustomPet } from '../../../../shared/pet-types'
 import { Button } from '../ui/button'
@@ -10,7 +14,10 @@ import { Input } from '../ui/input'
 import { petImportFailureText } from '../pet/pet-import-failure-text'
 import OfficePanel from './OfficePanel'
 
-type PetCatalog = Pick<PetApi, 'catalogList' | 'catalogInstall'>
+type PetCatalog = {
+  catalogList?: (query: PetCatalogQuery) => Promise<unknown>
+  catalogInstall?: PetApi['catalogInstall']
+}
 
 type PetShopPanelProps = {
   onClose: () => void
@@ -18,12 +25,10 @@ type PetShopPanelProps = {
   catalog?: PetCatalog
 }
 
-type Listing = { pets: PetCatalogEntry[]; page: number; totalPages: number }
+type Listing = { pets: PetCatalogEntry[]; page: number; totalPages: number; query: string }
 
 function isCatalogPage(value: unknown): value is PetCatalogPage {
-  return (
-    typeof value === 'object' && value !== null && Array.isArray((value as PetCatalogPage).pets)
-  )
+  return typeof value === 'object' && value !== null && 'pets' in value && Array.isArray(value.pets)
 }
 
 /** Browse codex-pets.net and install pets on this computer only. */
@@ -44,33 +49,44 @@ export default function PetShopPanel({
   const [error, setError] = useState<string | null>(null)
   const [installing, setInstalling] = useState<string | null>(null)
   const [installed, setInstalled] = useState<Record<string, CustomPet>>({})
+  // Why: only the newest search may fill the list; an older answer arriving late is dropped.
+  const latestRequest = useRef(0)
 
   const load = useCallback(
     async (page: number, query: string, append: boolean) => {
       if (!catalog?.catalogList) {
         return
       }
+      const request = ++latestRequest.current
       setLoading(true)
       setError(null)
       try {
-        const result: unknown = await catalog.catalogList({ page, search: query })
+        const result = await catalog.catalogList({ page, search: query })
+        if (request !== latestRequest.current) {
+          return
+        }
         if (!isCatalogPage(result)) {
           setSupported(false)
           return
         }
         setListing((previous) => ({
           ...result,
+          query,
           pets: append && previous ? [...previous.pets, ...result.pets] : result.pets
         }))
       } catch {
-        setError(
-          translate(
-            'auto.components.agentOffice.shop.listFailed',
-            'Could not reach codex-pets.net. Check your connection and try again.'
+        if (request === latestRequest.current) {
+          setError(
+            translate(
+              'auto.components.agentOffice.shop.listFailed',
+              'Could not reach codex-pets.net. Check your connection and try again.'
+            )
           )
-        )
+        }
       } finally {
-        setLoading(false)
+        if (request === latestRequest.current) {
+          setLoading(false)
+        }
       }
     },
     [catalog]
@@ -197,7 +213,7 @@ export default function PetShopPanel({
             variant="outline"
             size="sm"
             disabled={loading}
-            onClick={() => void load(listing.page + 1, search, true)}
+            onClick={() => void load(listing.page + 1, listing.query, true)}
           >
             {translate('auto.components.agentOffice.shop.more', 'Show more')}
           </Button>
