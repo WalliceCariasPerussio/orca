@@ -82,3 +82,19 @@ export const reviews = defineFixture({
   ),
   interact: (frame) => waitFor(frame, 'canvas[data-ready]')
 })
+
+export const comesAndGoes = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => (
+    <StaffedFloor
+      agents={fakeAgents().filter((agent) => agent.key !== 'pane-6')}
+      then={fakeAgents().filter((agent) => agent.key !== 'pane-0')}
+      thenAfterMs={2300}
+    />
+  ),
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 1100))
+  }
+})

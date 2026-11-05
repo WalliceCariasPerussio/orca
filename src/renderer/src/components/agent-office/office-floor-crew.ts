@@ -1,5 +1,6 @@
 import type { OfficeAgent } from './office-agents'
 import { Cheers } from './office-cheers'
+import { Departures } from './office-departures'
 import type { DeskAgent } from './office-desk-agents'
 import { FIGURE_HEIGHT } from './office-figures'
 import {
@@ -42,6 +43,7 @@ export class FloorCrew {
   private staff: FloorStaff = EMPTY_STAFF
   private readonly cheers = new Cheers()
   private readonly roaming = new Roaming()
+  private readonly departures = new Departures()
   private thoughts: OfficeThoughts = new Map()
 
   constructor(private readonly hireLabel: string) {}
@@ -59,13 +61,16 @@ export class FloorCrew {
     this.staff = staffFloor(agents, floor.id, sprites, this.hireLabel)
     const layout = layoutForFloor(floor, this.staff.deskCount)
     const scene = buildOfficeScene(layout, staffTiles(this.staff))
-    this.roaming.sync(this.staff.desks, pinnedKeys(agents), floor.id, scene, performance.now())
+    const now = performance.now()
+    const leavers = this.roaming.sync(this.staff.desks, pinnedKeys(agents), floor.id, scene, now)
+    this.departures.add(leavers, scene)
     return scene
   }
 
   clear(): void {
     this.staff = EMPTY_STAFF
     this.roaming.clear()
+    this.departures.clear()
   }
 
   /** Returns false when nothing anyone thinks has changed, so the frame can stay as it is. */
@@ -85,7 +90,8 @@ export class FloorCrew {
   /** Moves the floor's people on; true while someone moves on their own and frames must keep coming. */
   tick(dt: number, now: number): boolean {
     const walking = this.roaming.tick(dt, now)
-    return this.cheers.active(now) || walking
+    const leaving = this.departures.tick(dt)
+    return this.cheers.active(now) || walking || leaving
   }
 
   agentAt(world: WorldPoint): StaffHit | null {
@@ -112,6 +118,7 @@ export class FloorCrew {
       lift: this.cheers.lift(desk.agent.key, now)
     })
     const drawn = staffDrawables(this.staff, now, projection, stanceOf)
+    drawn.drawables.push(...this.departures.drawables(now, projection))
     for (const desk of this.staff.desks) {
       const { feet } = this.roaming.stance(desk)
       const confetti = this.cheers.confetti(desk.agent.key, feet, now, projection)

@@ -51,12 +51,15 @@ export function agentsWith(changes: Record<string, DashboardBucket>): OfficeAgen
 export function StaffedFloor({
   agents = fakeAgents(),
   then,
+  thenAfterMs = 200,
   visit,
   thoughts
 }: {
   agents?: OfficeAgent[]
   /** Agents a moment later, to catch the office reacting to a change. */
   then?: OfficeAgent[]
+  /** How much later; past two seconds, a new agent counts as arriving while you watch. */
+  thenAfterMs?: number
   /** An agent you set off to, as the "who needs you" button does. */
   visit?: string
   /** What the agents think out loud. */
@@ -96,7 +99,7 @@ export function StaffedFloor({
         building.visit(visit)
       }
       canvas.dataset.ready = 'true'
-    }, 200)
+    }, thenAfterMs)
     return () => {
       window.clearTimeout(later)
       building.dispose()

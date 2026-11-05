@@ -61,6 +61,9 @@ function spanOf(span: Span, seed: string): number {
   return span[0] + toss(seed, span[1] - span[0] + 1)
 }
 
+/** An agent gone from the floor, from where it last stood. */
+export type Leaver = { desk: DeskAgent; walker: Walker }
+
 /** Agents with nothing to do get up, stroll the floor and rest in the lounge; work calls them back. */
 export class Roaming {
   private readonly roams = new Map<string, Roam>()
@@ -71,25 +74,32 @@ export class Roaming {
   private scene: OfficeScene | null = null
   private openTiles: TilePoint[] = []
 
-  /** Follows the floor's agents; on a floor just walked onto, the free ones are already resting. */
+  /**
+   * Follows the floor's agents; on a floor just walked onto, the free ones are already resting.
+   * Later arrivals step out of the elevator, and those who left are returned to walk out.
+   */
   sync(
     desks: readonly DeskAgent[],
     pinned: ReadonlySet<string>,
     floorId: string,
     scene: OfficeScene,
     now: number
-  ): void {
+  ): Leaver[] {
     if (floorId !== this.floorId) {
       this.roams.clear()
       this.arrivedAt = now
     }
     const arriving = now - this.arrivedAt < ARRIVAL_GRACE_MS
+    const present = new Set(desks.map(({ agent }) => agent.key))
+    const leavers = this.desks.flatMap((desk) => {
+      const roam = this.roams.get(desk.agent.key)
+      return roam && !present.has(desk.agent.key) ? [{ desk, walker: roam.walker }] : []
+    })
     this.desks = desks
     this.pinned = pinned
     this.floorId = floorId
     this.scene = scene
     this.openTiles = this.openTilesOf(scene)
-    const present = new Set(desks.map(({ agent }) => agent.key))
     for (const key of this.roams.keys()) {
       if (!present.has(key)) {
         this.roams.delete(key)
@@ -106,6 +116,7 @@ export class Roaming {
         this.go(roam, desk.seat, true)
       }
     }
+    return leavers
   }
 
   clear(): void {
@@ -171,8 +182,15 @@ export class Roaming {
       home: null,
       moves: 0
     }
+    if (!arriving) {
+      // Why: someone who starts work while you watch comes in by the elevator, like you.
+      placeAt(roam.walker, { tile: ELEVATOR_FRONT_TILE, feet: tileFeet(ELEVATOR_FRONT_TILE) })
+      Object.assign(roam, { seated: false, returning: true })
+      this.go(roam, desk.seat, true)
+      return roam
+    }
     placeAt(roam.walker, desk.seat)
-    const home = arriving && this.isFree(desk) ? this.claimHome() : null
+    const home = this.isFree(desk) ? this.claimHome() : null
     if (home) {
       placeAt(roam.walker, home)
       Object.assign(roam, {
