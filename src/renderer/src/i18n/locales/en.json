@@ -19408,7 +19408,8 @@
           "label": "Agent Office. Arrow keys walk, Enter calls the elevator.",
           "hint": "Click the floor to walk. Click the elevator to change floors. Click an agent to open its terminal.",
           "floorHint": "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team.",
-          "openTerminal": "click to open the terminal"
+          "openTerminal": "click to open the terminal",
+          "workspace": "Workspace: {{value0}}"
         },
         "elevator": {
           "title": "Elevator",

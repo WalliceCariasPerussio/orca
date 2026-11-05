@@ -20,8 +20,8 @@ export const TEAM_BOARD = { col: 2, row: 0, tiles: 2 }
 /** Where you stand to read the team board. */
 export const TEAM_BOARD_FRONT_TILE = { col: 3, row: 2 }
 
-/** Where an agent works: the tile it stands on and the point between its feet. */
-export type DeskSeat = { tile: TilePoint; feet: WorldPoint }
+/** Where an agent works: the tile it stands on, the point between its feet, and its desk's corner tile. */
+export type DeskSeat = { tile: TilePoint; feet: WorldPoint; desk: TilePoint }
 
 function hueOf(hex: string | undefined): number {
   const match = /^#?([0-9a-f]{6})$/i.exec(hex ?? '')
@@ -54,7 +54,8 @@ function deskOrigins(agentCount: number): TilePoint[] {
 export function deskSeats(agentCount: number): DeskSeat[] {
   return deskOrigins(agentCount).map(({ col, row }) => ({
     tile: { col: col + 1, row: row - 1 },
-    feet: { x: (col + 1) * TILE_SIZE + TILE_SIZE / 2, y: row * TILE_SIZE + 18 }
+    feet: { x: (col + 1) * TILE_SIZE + TILE_SIZE / 2, y: row * TILE_SIZE + 18 },
+    desk: { col, row }
   }))
 }
 

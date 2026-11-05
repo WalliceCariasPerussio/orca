@@ -18,6 +18,9 @@ export type OfficeAgent = {
   bucket: DashboardBucket
   /** Bundled or custom pet id the agent wears. */
   petId: string
+  /** The workspace it works in; agents of one workspace sit together as a sector. */
+  worktreeId: string
+  worktreeName: string
   startedAt: number
   /** The agent at a desk that spawned this one; it then stands by that desk instead of its own. */
   parentKey?: string
@@ -85,6 +88,8 @@ export function officeAgentsFrom(
           agentType: card.agentType,
           bucket: card.bucket,
           petId: staffPets[roleForAgentType(card.agentType)],
+          worktreeId: card.worktreeId,
+          worktreeName: card.worktreeName,
           startedAt: card.startedAt,
           parentKey,
           subagents

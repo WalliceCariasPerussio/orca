@@ -22,7 +22,7 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
   }
   const place = `${hover.left},${hover.top}`
   return hover.kind === 'agent'
-    ? `agent:${hover.agent.key}:${hover.agent.bucket}:${hover.agent.name}:${place}`
+    ? `agent:${hover.agent.key}:${hover.agent.bucket}:${hover.agent.name}:${hover.agent.worktreeName}:${place}`
     : `spot:${hover.spot}:${place}`
 }
 
@@ -36,6 +36,11 @@ export default function OfficeHoverTip({ hover }: { hover: OfficeHover }): React
       {hover.kind === 'agent' ? (
         <>
           <p className="truncate font-medium">{hover.agent.name}</p>
+          <p className="truncate text-muted-foreground">
+            {translate('auto.components.agentOffice.building.workspace', 'Workspace: {{value0}}', {
+              value0: hover.agent.worktreeName
+            })}
+          </p>
           <p className="text-muted-foreground">
             {bucketLabel(hover.agent.bucket)} ·{' '}
             {translate(

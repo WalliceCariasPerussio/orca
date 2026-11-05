@@ -19,24 +19,26 @@ const repos: Repo[] = [
   { id: 'banca', path: 'F:/banca', displayName: 'banca', badgeColor: '#16a34a', addedAt: 3 }
 ]
 
-const STAFF: [string, DashboardBucket][] = [
-  ['claude', 'working'],
-  ['opencode', 'attention'],
-  ['codex', 'done'],
-  ['claude', 'idle'],
-  ['codex', 'working'],
-  ['gemini', 'working'],
-  ['claude', 'attention']
+const STAFF: [string, DashboardBucket, string][] = [
+  ['claude', 'working', 'feat/login-social'],
+  ['opencode', 'attention', 'fix/cache'],
+  ['codex', 'done', 'main'],
+  ['claude', 'idle', 'feat/login-social'],
+  ['codex', 'working', 'fix/cache'],
+  ['gemini', 'working', 'main'],
+  ['claude', 'attention', 'fix/cache']
 ]
 
 function fakeAgents(): OfficeAgent[] {
-  return STAFF.map(([agentType, bucket], i) => ({
+  return STAFF.map(([agentType, bucket, worktree], i) => ({
     key: `pane-${i}`,
     floorId: 'mesa',
     name: `${agentType} ${i + 1}`,
     agentType,
     bucket,
     petId: DEFAULT_STAFF_PETS[roleForAgentType(agentType)],
+    worktreeId: `wt-${worktree}`,
+    worktreeName: worktree,
     startedAt: i,
     subagents: []
   }))

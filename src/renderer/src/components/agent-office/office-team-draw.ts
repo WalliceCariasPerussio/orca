@@ -51,7 +51,7 @@ function rememberDraw(drawn: ReadonlyMap<string, string>): void {
 }
 
 // Why: a hash of the agent stands in for the coin toss, so drawing again never changes anyone's pet.
-function toss(key: string, sides: number): number {
+export function toss(key: string, sides: number): number {
   let hash = 0x811c9dc5
   for (let i = 0; i < key.length; i++) {
     hash ^= key.charCodeAt(i)

@@ -16,6 +16,7 @@ import {
 import { FIGURE_HEIGHT } from './office-figures'
 import type { PetSprite } from './office-pet-sprite'
 import type { DepthDrawable, OfficeProjection } from './office-scene'
+import { groupBySector, plaqueDrawables, sectorColor, type DeskPlaque } from './office-sectors'
 import type { WorldPoint } from './office-walker'
 
 /** Who works on one floor: agents at desks and the sub-agents standing by them. */
@@ -24,12 +25,15 @@ export type FloorStaff = {
   deskCount: number
   desks: DeskAgent[]
   helpers: DeskHelpers
+  /** Each desk's plaque: the workspace of the agent at it. */
+  plaques: DeskPlaque[]
 }
 
 export const EMPTY_STAFF: FloorStaff = {
   deskCount: 0,
   desks: [],
-  helpers: { standing: [], more: [] }
+  helpers: { standing: [], more: [] },
+  plaques: []
 }
 
 /** What is under a point: the agent to describe, whose window a click opens, and where to label it. */
@@ -41,8 +45,18 @@ export function staffFloor(
   sprites: ReadonlyMap<string, PetSprite>
 ): FloorStaff {
   const atDesks = agents.filter((agent) => agent.floorId === floorId && !agent.parentKey)
-  const desks = seatAgents(atDesks, sprites)
-  return { deskCount: atDesks.length, desks, helpers: helpersFor(desks, agents, sprites) }
+  const desks = seatAgents(groupBySector(atDesks), sprites)
+  const plaques = desks.map(({ agent, seat }) => ({
+    desk: seat.desk,
+    label: agent.worktreeName,
+    color: sectorColor(agent.worktreeId)
+  }))
+  return {
+    deskCount: atDesks.length,
+    desks,
+    helpers: helpersFor(desks, agents, sprites),
+    plaques
+  }
 }
 
 export function staffTiles(staff: FloorStaff): string[] {
@@ -76,7 +90,11 @@ export function staffDrawables(
   const desks = deskAgentDrawables(staff.desks, now, projection)
   const helpers = helperDrawables(staff.helpers, now, projection)
   return {
-    drawables: [...desks.drawables, ...helpers.drawables],
+    drawables: [
+      ...desks.drawables,
+      ...helpers.drawables,
+      ...plaqueDrawables(staff.plaques, projection)
+    ],
     holdMs: Math.min(desks.holdMs, helpers.holdMs)
   }
 }

@@ -44,9 +44,9 @@ export type WallSign = {
 const SIGN_TOP = 7
 const SIGN_HEIGHT = 13
 const SIGN_FONT_SIZE = 7
-const SIGN_FILL = '#2f3242'
-const SIGN_BORDER = '#737c8d'
-const SIGN_TEXT = '#f3ecd9'
+export const SIGN_FILL = '#2f3242'
+export const SIGN_BORDER = '#737c8d'
+export const SIGN_TEXT = '#f3ecd9'
 
 export function buildOfficeScene(layout: OfficeLayout, extraBlocked: string[] = []): OfficeScene {
   const blockedTiles = getBlockedTiles(layout.furniture)
