@@ -78,8 +78,22 @@ function teamAgents(): OfficeAgent[] {
   return agents.map((agent) => ({ ...agent, petId: drawn.get(agent.key) ?? agent.petId }))
 }
 
+/** The same agents, with two that were working now done. */
+function finishedAgents(): OfficeAgent[] {
+  return fakeAgents().map((agent) =>
+    agent.key === 'pane-0' || agent.key === 'pane-4' ? { ...agent, bucket: 'done' } : agent
+  )
+}
+
 // Why: live agents come from terminals a fixture cannot start, so this drives the building directly.
-function StaffedFloor({ agents = fakeAgents() }: { agents?: OfficeAgent[] }): React.JSX.Element {
+function StaffedFloor({
+  agents = fakeAgents(),
+  then
+}: {
+  agents?: OfficeAgent[]
+  /** Agents a moment later, to catch the office reacting to a change. */
+  then?: OfficeAgent[]
+}): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { cast } = useOfficeCast(Object.values(DEFAULT_STAFF_PETS))
   useEffect(() => {
@@ -105,8 +119,16 @@ function StaffedFloor({ agents = fakeAgents() }: { agents?: OfficeAgent[] }): Re
     })
     building.setAgents(agents)
     building.attach(canvas, 960, 600, 1)
-    canvas.dataset.ready = 'true'
-    return () => building.dispose()
+    const later = window.setTimeout(() => {
+      if (then) {
+        building.setAgents(then)
+      }
+      canvas.dataset.ready = 'true'
+    }, 200)
+    return () => {
+      window.clearTimeout(later)
+      building.dispose()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a scene's agents are fixed
   }, [cast])
   return <canvas ref={canvasRef} style={{ width: 960, height: 600 }} />
@@ -119,6 +141,16 @@ export const teamFloor = defineFixture({
   interact: async (frame) => {
     await waitFor(frame, 'canvas[data-ready]')
     await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+})
+
+export const cheer = defineFixture({
+  width: 960,
+  store: { repos },
+  render: () => <StaffedFloor then={finishedAgents()} />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 380))
   }
 })
 

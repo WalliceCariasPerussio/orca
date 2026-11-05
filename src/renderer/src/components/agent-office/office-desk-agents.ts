@@ -5,11 +5,18 @@ import { bubbleFor } from './office-bubbles'
 import { FIGURE_HEIGHT, figureDrawable } from './office-figures'
 import { frameAt, type PetSprite } from './office-pet-sprite'
 import type { DepthDrawable, OfficeProjection } from './office-scene'
-import type { WorldPoint } from './office-walker'
+import type { Facing, WorldPoint } from './office-walker'
 import { deskSeats, type DeskSeat } from './project-floor-layout'
 import { getCachedSprite } from './vendor/pixel-agents/webview-ui/src/office/sprites/spriteCache'
 
 export type DeskAgent = { agent: OfficeAgent; seat: DeskSeat; sprite: PetSprite }
+
+/** Where an agent is this frame: at its desk unless it got up, which way it walks, and how high it hops. */
+export type AgentStance = { feet: WorldPoint; walking: Facing | null; lift: number }
+
+export function seatedStance({ seat }: DeskAgent): AgentStance {
+  return { feet: seat.feet, walking: null, lift: 0 }
+}
 
 const BOB_MS = 450
 export const BUBBLE_HALF_WIDTH = 5
@@ -37,33 +44,44 @@ export function seatTileKeys(deskAgents: readonly DeskAgent[]): string[] {
   return deskAgents.map(({ seat }) => `${seat.tile.col},${seat.tile.row}`)
 }
 
-/** Working and waiting agents move; the rest hold a still frame so a quiet floor costs nothing. */
+function stripFor(agent: OfficeAgent, sprite: PetSprite, walking: Facing | null) {
+  if (walking) {
+    return { strip: walking === 'left' ? sprite.walkLeft : sprite.walkRight, moving: true }
+  }
+  const acted = agent.bucket === 'idle' ? undefined : sprite.states?.[agent.bucket]
+  const moving = agent.bucket === 'working' || (agent.bucket === 'attention' && acted !== undefined)
+  return { strip: acted ?? sprite.idle, moving }
+}
+
+/** Working, waiting and walking agents move; the rest hold a still frame so a quiet floor costs nothing. */
 export function deskAgentDrawables(
   deskAgents: readonly DeskAgent[],
   now: number,
-  projection: OfficeProjection
+  projection: OfficeProjection,
+  stanceOf: (desk: DeskAgent) => AgentStance = seatedStance
 ): { drawables: DepthDrawable[]; holdMs: number } {
   const { offsetX, offsetY, zoom } = projection
   const drawables: DepthDrawable[] = []
   let holdMs = Number.POSITIVE_INFINITY
-  deskAgents.forEach(({ agent, seat, sprite }, i) => {
-    const acted = agent.bucket === 'idle' ? undefined : sprite.states?.[agent.bucket]
-    const strip = acted ?? sprite.idle
-    const moving = agent.bucket === 'working' || (agent.bucket === 'attention' && acted)
+  deskAgents.forEach((desk, i) => {
+    const { agent, sprite } = desk
+    const { feet, walking, lift } = stanceOf(desk)
+    const { strip, moving } = stripFor(agent, sprite, walking)
     const shown = moving ? frameAt(strip, now + i * STAGGER_MS) : null
     if (shown) {
       holdMs = Math.min(holdMs, shown.nextInMs)
     }
     const frame = shown?.frame ?? strip[0]
-    drawables.push(figureDrawable({ sprite, frame, feet: seat.feet, zY: seat.feet.y, projection }))
+    const raised = { x: feet.x, y: feet.y - lift }
+    drawables.push(figureDrawable({ sprite, frame, feet: raised, zY: feet.y, projection }))
     let bob = 0
     if (agent.bucket === 'attention') {
       bob = Math.floor(now / BOB_MS) % 2
       holdMs = Math.min(holdMs, BOB_MS - (now % BOB_MS))
     }
     const bubble = getCachedSprite(bubbleFor(agent.bucket), zoom)
-    const x = offsetX + (seat.feet.x - BUBBLE_HALF_WIDTH) * zoom
-    const y = offsetY + (seat.feet.y - FIGURE_HEIGHT - BUBBLE_HEIGHT - bob) * zoom
+    const x = offsetX + (raised.x - BUBBLE_HALF_WIDTH) * zoom
+    const y = offsetY + (raised.y - FIGURE_HEIGHT - BUBBLE_HEIGHT - bob) * zoom
     drawables.push({ zY: BUBBLE_Z, draw: (c) => c.drawImage(bubble, x, y) })
     const badge = agentBadge(agent.agentType, zoom)
     if (badge) {
@@ -74,11 +92,16 @@ export function deskAgentDrawables(
   return { drawables, holdMs }
 }
 
-export function deskAgentAt(deskAgents: readonly DeskAgent[], world: WorldPoint): DeskAgent | null {
+export function deskAgentAt(
+  deskAgents: readonly DeskAgent[],
+  world: WorldPoint,
+  stanceOf: (desk: DeskAgent) => AgentStance = seatedStance
+): DeskAgent | null {
   return (
-    deskAgents.find(({ seat }) => {
-      const dx = Math.abs(world.x - seat.feet.x)
-      const dy = seat.feet.y - world.y
+    deskAgents.find((desk) => {
+      const { feet } = stanceOf(desk)
+      const dx = Math.abs(world.x - feet.x)
+      const dy = feet.y - world.y
       return dx <= HIT_HALF_WIDTH && dy >= -2 && dy <= FIGURE_HEIGHT + BUBBLE_HEIGHT
     }) ?? null
   )

@@ -136,6 +136,7 @@ export class OfficeBuilding {
   /** Every agent in the building; each sits on its project's floor. */
   setAgents(agents: OfficeAgent[]): void {
     this.agents = agents
+    this.crew.notice(agents)
     this.seatStaff()
     this.loop.invalidate()
   }
@@ -295,7 +296,8 @@ export class OfficeBuilding {
       this.leaveRemovedFloor()
     }
     const holdMs = this.draw(now)
-    return { animating: isWalking(this.walker) || this.trip.animating, holdMs }
+    const animating = isWalking(this.walker) || this.trip.animating || this.crew.animating(now)
+    return { animating, holdMs }
   }
 
   private draw(now: number): number {

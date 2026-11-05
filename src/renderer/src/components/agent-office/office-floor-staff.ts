@@ -3,7 +3,9 @@ import {
   deskAgentAt,
   deskAgentDrawables,
   seatAgents,
+  seatedStance,
   seatTileKeys,
+  type AgentStance,
   type DeskAgent
 } from './office-desk-agents'
 import {
@@ -91,17 +93,21 @@ export function staffTiles(staff: FloorStaff): string[] {
 }
 
 // Why: sub-agents stand in front of the desks, so they win a click over the agent behind them.
-export function staffAt(staff: FloorStaff, world: WorldPoint): StaffHit | null {
+export function staffAt(
+  staff: FloorStaff,
+  world: WorldPoint,
+  stanceOf: (desk: DeskAgent) => AgentStance = seatedStance
+): StaffHit | null {
   const helper = helperAt(staff.helpers, world)
   if (helper) {
     const tip = { x: helper.feet.x, y: helper.feet.y - HELPER_HEIGHT - 4 }
     return { agent: helper.agent, opens: helper.opens, tip }
   }
-  const desk = deskAgentAt(staff.desks, world)
+  const desk = deskAgentAt(staff.desks, world, stanceOf)
   if (!desk) {
     return null
   }
-  const { feet } = desk.seat
+  const { feet } = stanceOf(desk)
   return {
     agent: desk.agent,
     opens: desk.agent.key,
@@ -112,9 +118,10 @@ export function staffAt(staff: FloorStaff, world: WorldPoint): StaffHit | null {
 export function staffDrawables(
   staff: FloorStaff,
   now: number,
-  projection: OfficeProjection
+  projection: OfficeProjection,
+  stanceOf: (desk: DeskAgent) => AgentStance = seatedStance
 ): { drawables: DepthDrawable[]; holdMs: number } {
-  const desks = deskAgentDrawables(staff.desks, now, projection)
+  const desks = deskAgentDrawables(staff.desks, now, projection, stanceOf)
   const helpers = helperDrawables(staff.helpers, now, projection)
   return {
     drawables: [
