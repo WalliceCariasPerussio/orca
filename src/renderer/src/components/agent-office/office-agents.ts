@@ -10,6 +10,8 @@ export type OfficeAgent = {
   key: string
   floorId: string
   name: string
+  /** Kind of agent, shown as a small badge since any pet can wear any agent. */
+  agentType: string
   bucket: DashboardBucket
   /** Bundled or custom pet id the agent wears. */
   petId: string
@@ -30,6 +32,7 @@ export function officeAgentsFrom(
       key: card.paneKey,
       floorId: card.repoId,
       name: card.conversationName || card.task || card.agentType,
+      agentType: card.agentType,
       bucket: card.bucket,
       petId: staffPets[roleForAgentType(card.agentType)],
       startedAt: card.startedAt,

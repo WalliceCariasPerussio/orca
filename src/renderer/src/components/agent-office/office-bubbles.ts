@@ -5,15 +5,15 @@ import {
 } from './vendor/pixel-agents/webview-ui/src/office/sprites/spriteData'
 import type { SpriteData } from './vendor/pixel-agents/webview-ui/src/office/types'
 
-const FILL = '#EEEEFF'
+export const BUBBLE_FILL = '#EEEEFF'
+export const BUBBLE_OUTLINE = BUBBLE_WAITING_SPRITE[0][1]
 const NEEDS_YOU = '#D9483B'
 const RESTING = '#8A93A3'
 
 // Why: pixel-agents' waiting bubble is the frame; the glyph inside tells the state at a glance.
 function withGlyph(color: string, pixels: [number, number][]): SpriteData {
-  const outlineColor = BUBBLE_WAITING_SPRITE[0][1]
   const sprite = BUBBLE_WAITING_SPRITE.map((row) =>
-    row.map((pixel) => (pixel === '' || pixel === outlineColor ? pixel : FILL))
+    row.map((pixel) => (pixel === '' || pixel === BUBBLE_OUTLINE ? pixel : BUBBLE_FILL))
   )
   for (const [col, row] of pixels) {
     sprite[row][col] = color

@@ -1,9 +1,8 @@
 import { translate } from '@/i18n/i18n'
-import { useAppStore } from '@/store'
 import { Button } from '../ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { BUNDLED_PETS } from '../pet/pet-models'
 import OfficePanel from './OfficePanel'
+import { usePetChoices } from './office-pet-choices'
 import { STAFF_ROLES, type StaffPets, type StaffRole } from './office-staff-pets'
 
 type StaffPetsPanelProps = {
@@ -33,11 +32,7 @@ export default function StaffPetsPanel({
   onOpenShop,
   onClose
 }: StaffPetsPanelProps): React.JSX.Element {
-  const customPets = useAppStore((s) => s.customPets)
-  const choices = [
-    ...BUNDLED_PETS.map((pet) => ({ id: pet.id, label: pet.label })),
-    ...customPets.map((pet) => ({ id: pet.id, label: pet.label }))
-  ]
+  const choices = usePetChoices()
   return (
     <OfficePanel
       title={translate('auto.components.agentOffice.staff.title', 'Team pets')}

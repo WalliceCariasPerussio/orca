@@ -18,8 +18,21 @@ import {
   type OfficeScene
 } from './office-scene'
 import type { WorldPoint } from './office-walker'
+import { TEAM_BOARD } from './project-floor-layout'
+import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
 export type PlacedFigure = { sprite: PetSprite; frame: PetFrame; feet: WorldPoint }
+
+/** The whiteboard's writing area in world pixels, and the paper and marker colors of its art. */
+const BOARD_AREA = {
+  x: TEAM_BOARD.col * TILE_SIZE + 5,
+  y: TEAM_BOARD.row * TILE_SIZE + 12,
+  width: 22,
+  height: 9
+}
+const BOARD_PAPER = '#EFEBE8'
+const BOARD_INK = '#5A4F50'
+const BOARD_FONT_SIZE = 6
 
 export type BuildingFrame = {
   scene: OfficeScene
@@ -27,6 +40,8 @@ export type BuildingFrame = {
   widthPx: number
   heightPx: number
   sign: string
+  /** Written on a project floor's whiteboard so it reads as the team board; null in the lobby. */
+  boardLabel: string | null
   doorOpen: number
   indicator: string
   called: boolean
@@ -65,4 +80,27 @@ export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: Buil
   }
   drawOfficeScene(context, frame.scene, projection, frame.widthPx, frame.heightPx, extras)
   drawWallSign(context, projection, { ...ROOM_SIGN, text: frame.sign })
+  if (frame.boardLabel) {
+    drawBoardLabel(context, projection, frame.boardLabel)
+  }
+}
+
+// Why: the board's doodles are wiped and the label written in its marker color, so it stays art.
+function drawBoardLabel(
+  context: CanvasRenderingContext2D,
+  projection: OfficeProjection,
+  text: string
+): void {
+  const { offsetX, offsetY, zoom } = projection
+  const x = offsetX + BOARD_AREA.x * zoom
+  const y = offsetY + BOARD_AREA.y * zoom
+  const width = BOARD_AREA.width * zoom
+  const height = BOARD_AREA.height * zoom
+  context.fillStyle = BOARD_PAPER
+  context.fillRect(x, y, width, height)
+  context.fillStyle = BOARD_INK
+  context.font = `700 ${BOARD_FONT_SIZE * zoom}px ui-monospace, "Cascadia Mono", Consolas, monospace`
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText(text, x + width / 2, y + height / 2 + zoom / 2, width - 2 * zoom)
 }

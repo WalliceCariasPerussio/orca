@@ -1,3 +1,4 @@
+import { onBadgeReady } from './office-agent-badges'
 import type { OfficeAgent } from './office-agents'
 import { drawBuildingFrame } from './office-building-frame'
 import {
@@ -23,16 +24,9 @@ import {
   type OfficeProjection,
   type OfficeScene
 } from './office-scene'
+import { spotAt, type OfficeSpotId } from './office-spots'
+import { createWalker, isWalking, stepWalker, type TilePoint, type Walker } from './office-walker'
 import {
-  createWalker,
-  isWalking,
-  stepWalker,
-  type TilePoint,
-  type Walker,
-  type WorldPoint
-} from './office-walker'
-import {
-  RECEPTION_COUNTER_FRONT_TILE,
   RECEPTION_ENTRANCE_TILE,
   RECEPTIONIST_BLOCKED,
   RECEPTIONIST_FEET
@@ -52,20 +46,20 @@ export type OfficeBuildingSetup = {
   staffSprites: ReadonlyMap<string, PetSprite>
   lobbySign: string
   lobbyShort: string
+  /** Written on each project floor's whiteboard. */
+  teamBoardLabel: string
   onPanelChange: (open: boolean) => void
   onFloorChange: (floor: OfficeFloor) => void
   onAgentClick: (agent: OfficeAgent) => void
-  onReceptionistClick: () => void
+  /** You clicked the receptionist or a floor's team board, and are walking up to it. */
+  onSpotClick: (spot: OfficeSpotId) => void
 }
 
-export type AgentHover = { agent: OfficeAgent; left: number; top: number }
-
-const HIT_HALF_WIDTH = 9
-
-function isNear(world: WorldPoint, feet: WorldPoint): boolean {
-  const dy = feet.y - world.y
-  return Math.abs(world.x - feet.x) <= HIT_HALF_WIDTH && dy >= -2 && dy <= FIGURE_HEIGHT
-}
+/** What the pointer rests on and where its label goes, in CSS pixels. */
+export type OfficeHover = { left: number; top: number } & (
+  | { kind: 'agent'; agent: OfficeAgent }
+  | { kind: 'spot'; spot: OfficeSpotId }
+)
 
 /** The office you walk through: one floor on screen, its agents, the elevator, and you. */
 export class OfficeBuilding {
@@ -86,6 +80,7 @@ export class OfficeBuilding {
   private heightPx = 1
   private projection: OfficeProjection | null = null
   private readonly loop = new FrameLoop((dt, now) => this.tick(dt, now))
+  private readonly stopBadgeUpdates = onBadgeReady(() => this.loop.invalidate())
 
   constructor(private readonly setup: OfficeBuildingSetup) {
     this.floors = setup.floors
@@ -157,9 +152,10 @@ export class OfficeBuilding {
       this.setup.onAgentClick(clicked.agent)
       return
     }
-    if (this.floor.number === 0 && isNear(world, RECEPTIONIST_FEET)) {
-      this.walkAlong(this.pathTo(RECEPTION_COUNTER_FRONT_TILE))
-      this.setup.onReceptionistClick()
+    const spot = spotAt(this.floor.number === 0, world)
+    if (spot) {
+      this.walkAlong(this.pathTo(spot.front))
+      this.setup.onSpotClick(spot.id)
       return
     }
     const tile = tileAtCss(this.projection, cssX, cssY)
@@ -170,20 +166,21 @@ export class OfficeBuilding {
     }
   }
 
-  /** The agent under a point and where to show its name, in CSS pixels. */
-  hover(cssX: number, cssY: number): AgentHover | null {
+  hover(cssX: number, cssY: number): OfficeHover | null {
     if (!this.projection) {
       return null
     }
-    const found = deskAgentAt(this.staff, worldAtCss(this.projection, cssX, cssY))
-    if (!found) {
-      return null
+    const world = worldAtCss(this.projection, cssX, cssY)
+    const found = deskAgentAt(this.staff, world)
+    if (found) {
+      const { feet } = found.seat
+      const at = cssAtWorld(this.projection, feet.x, feet.y - FIGURE_HEIGHT - 14)
+      return { kind: 'agent', agent: found.agent, ...at }
     }
-    const { feet } = found.seat
-    return {
-      agent: found.agent,
-      ...cssAtWorld(this.projection, feet.x, feet.y - FIGURE_HEIGHT - 14)
-    }
+    const spot = spotAt(this.floor.number === 0, world)
+    return spot?.tip
+      ? { kind: 'spot', spot: spot.id, ...cssAtWorld(this.projection, spot.tip.x, spot.tip.y) }
+      : null
   }
 
   /** CSS point in front of the reception counter, where its menu opens. */
@@ -233,6 +230,7 @@ export class OfficeBuilding {
   }
 
   dispose(): void {
+    this.stopBadgeUpdates()
     this.loop.dispose()
   }
 
@@ -315,6 +313,7 @@ export class OfficeBuilding {
       widthPx: this.widthPx,
       heightPx: this.heightPx,
       sign: this.floor.number === 0 ? this.setup.lobbySign.toUpperCase() : this.floor.name,
+      boardLabel: this.floor.number === 0 ? null : this.setup.teamBoardLabel.toUpperCase(),
       doorOpen: this.trip.doorOpen,
       indicator: this.trip.indicator,
       called: this.trip.called,

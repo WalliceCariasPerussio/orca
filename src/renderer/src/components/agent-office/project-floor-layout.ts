@@ -15,6 +15,11 @@ const DEFAULT_WALL_HUE = 210
 
 export const MAX_DESKS = DESK_COLS.length * DESK_ROWS.length
 
+/** The whiteboard on the wall where the floor's team is chosen: two tiles wide and tall. */
+export const TEAM_BOARD = { col: 2, row: 0, tiles: 2 }
+/** Where you stand to read the team board. */
+export const TEAM_BOARD_FRONT_TILE = { col: 3, row: 2 }
+
 /** Where an agent works: the tile it stands on and the point between its feet. */
 export type DeskSeat = { tile: TilePoint; feet: WorldPoint }
 
@@ -75,7 +80,7 @@ export function createProjectFloorLayout(
       wallColor
     },
     [
-      { type: 'WHITEBOARD', col: 2, row: 0 },
+      { type: 'WHITEBOARD', col: TEAM_BOARD.col, row: TEAM_BOARD.row },
       { type: 'CLOCK', col: 12, row: 0 },
       { type: 'DOUBLE_BOOKSHELF', col: 17, row: 0 },
       ...deskFurniture(agentCount),

@@ -19983,6 +19983,13 @@
           "morePets": "Quer mais pets?",
           "openShop": "Abrir a loja de pets"
         },
+        "team": {
+          "title": "Equipe de {{value0}}",
+          "board": "Equipe do andar",
+          "boardHint": "clique para escolher os pets que trabalham aqui",
+          "boardLabel": "Equipe",
+          "description": "Escolha os pets que trabalham neste andar. Cada agente novo aqui sorteia um deles, seja Claude, Codex ou outro, e fica com ele. Sem nenhum marcado, cada tipo de agente usa o pet escolhido na recepção. Fica salvo neste computador."
+        },
         "shop": {
           "title": "Loja de pets",
           "notice": "Pets da comunidade do codex-pets.net, instalados só neste computador. Muitos são fan art de personagens de terceiros: instale só os que você pode usar.",
@@ -20001,6 +20008,7 @@
         "building": {
           "label": "Escritório de Agentes. As setas andam, Enter chama o elevador.",
           "hint": "Clique no chão para andar. Clique no elevador para trocar de andar. Clique num agente para abrir o terminal dele.",
+          "floorHint": "Clique no chão para andar. Clique num agente para ver o terminal dele. Clique no quadro branco para escolher a equipe do andar.",
           "openTerminal": "clique para abrir o terminal"
         },
         "elevator": {

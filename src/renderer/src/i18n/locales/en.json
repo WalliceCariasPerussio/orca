@@ -19382,6 +19382,13 @@
           "morePets": "Want more pets?",
           "openShop": "Open the pet shop"
         },
+        "team": {
+          "title": "Team of {{value0}}",
+          "board": "Floor team",
+          "boardHint": "click to pick the pets that work here",
+          "boardLabel": "Team",
+          "description": "Pick the pets that work on this floor. Each new agent here draws one of them, whether it is Claude, Codex or another agent, and keeps it. With none picked, each kind of agent wears its pet from the reception. Saved on this computer."
+        },
         "shop": {
           "title": "Pet shop",
           "notice": "Community pets from codex-pets.net, installed on this computer only. Many are fan art of other people’s characters, so install only pets you are free to use.",
@@ -19400,6 +19407,7 @@
         "building": {
           "label": "Agent Office. Arrow keys walk, Enter calls the elevator.",
           "hint": "Click the floor to walk. Click the elevator to change floors. Click an agent to open its terminal.",
+          "floorHint": "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team.",
           "openTerminal": "click to open the terminal"
         },
         "elevator": {

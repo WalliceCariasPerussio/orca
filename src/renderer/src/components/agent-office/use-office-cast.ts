@@ -45,6 +45,20 @@ async function loadCustomStaff(pet: CustomPet): Promise<readonly [string, PetSpr
   return url ? [pet.id, await loadPetSprite(url, grid)] : null
 }
 
+/** An installed pet's sprite, Orca's own or yours; null when its file cannot be read. */
+export async function loadInstalledPet(
+  petId: string,
+  customPets: readonly CustomPet[]
+): Promise<PetSprite | null> {
+  const bundled = BUNDLED_PETS.find((pet) => pet.id === petId)
+  if (bundled) {
+    return loadPetSprite(bundled.url, null)
+  }
+  const custom = customPets.find((pet) => pet.id === petId)
+  const loaded = custom ? await loadCustomStaff(custom) : null
+  return loaded?.[1] ?? null
+}
+
 /** Everyone the office draws, loaded once the office art and your pet are ready. */
 export function useOfficeCast(staffPetIds: readonly string[]): {
   cast: OfficeCast | null

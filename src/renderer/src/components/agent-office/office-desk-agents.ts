@@ -1,4 +1,5 @@
 import { GREMLIN_PET_ID } from '../pet/pet-models'
+import { agentBadge } from './office-agent-badges'
 import type { OfficeAgent } from './office-agents'
 import { bubbleFor } from './office-bubbles'
 import { FIGURE_HEIGHT, figureDrawable } from './office-figures'
@@ -12,6 +13,7 @@ export type DeskAgent = { agent: OfficeAgent; seat: DeskSeat; sprite: PetSprite 
 
 const BOB_MS = 450
 const BUBBLE_HALF_WIDTH = 5
+const BUBBLE_WIDTH = 11
 const BUBBLE_HEIGHT = 13
 const BUBBLE_Z = 10_000
 const STAGGER_MS = 137
@@ -62,6 +64,11 @@ export function deskAgentDrawables(
     const x = offsetX + (seat.feet.x - BUBBLE_HALF_WIDTH) * zoom
     const y = offsetY + (seat.feet.y - FIGURE_HEIGHT - BUBBLE_HEIGHT - bob) * zoom
     drawables.push({ zY: BUBBLE_Z, draw: (c) => c.drawImage(bubble, x, y) })
+    const badge = agentBadge(agent.agentType, zoom)
+    if (badge) {
+      const badgeX = x + (BUBBLE_WIDTH + 1) * zoom
+      drawables.push({ zY: BUBBLE_Z, draw: (c) => c.drawImage(badge, badgeX, y) })
+    }
   })
   return { drawables, holdMs }
 }

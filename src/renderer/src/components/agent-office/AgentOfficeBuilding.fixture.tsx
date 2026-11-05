@@ -7,7 +7,9 @@ import type { OfficeAgent } from './office-agents'
 import { OfficeBuilding } from './office-building'
 import { buildFloors } from './office-floors'
 import { DEFAULT_STAFF_PETS, roleForAgentType } from './office-staff-pets'
+import { drawTeamPets } from './office-team-draw'
 import { useOfficeCast } from './use-office-cast'
+import { BUNDLED_PETS, GREMLIN_PET_ID, OPENCODE_PET_ID } from '../pet/pet-models'
 
 const FLOOR_KEY = 'orca.agentOffice.floorId'
 
@@ -32,6 +34,7 @@ function fakeAgents(): OfficeAgent[] {
     key: `pane-${i}`,
     floorId: 'mesa',
     name: `${agentType} ${i + 1}`,
+    agentType,
     bucket,
     petId: DEFAULT_STAFF_PETS[roleForAgentType(agentType)],
     startedAt: i,
@@ -39,8 +42,15 @@ function fakeAgents(): OfficeAgent[] {
   }))
 }
 
+/** The same agents with every bundled pet on the floor's team, so pets no longer follow the kind. */
+function teamAgents(): OfficeAgent[] {
+  const agents = fakeAgents()
+  const drawn = drawTeamPets(agents, { mesa: BUNDLED_PETS.map((p) => p.id) }, new Map())
+  return agents.map((agent) => ({ ...agent, petId: drawn.get(agent.key) ?? agent.petId }))
+}
+
 // Why: live agents come from terminals a fixture cannot start, so this drives the building directly.
-function StaffedFloor(): React.JSX.Element {
+function StaffedFloor({ agents = fakeAgents() }: { agents?: OfficeAgent[] }): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { cast } = useOfficeCast(Object.values(DEFAULT_STAFF_PETS))
   useEffect(() => {
@@ -57,17 +67,79 @@ function StaffedFloor(): React.JSX.Element {
       staffSprites: cast.staff,
       lobbySign: 'Recepção',
       lobbyShort: 'T',
+      teamBoardLabel: 'Equipe',
       onPanelChange: () => {},
       onFloorChange: () => {},
       onAgentClick: () => {},
-      onReceptionistClick: () => {}
+      onSpotClick: () => {}
     })
-    building.setAgents(fakeAgents())
+    building.setAgents(agents)
     building.attach(canvas, 960, 600, 1)
     canvas.dataset.ready = 'true'
     return () => building.dispose()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a scene's agents are fixed
   }, [cast])
   return <canvas ref={canvasRef} style={{ width: 960, height: 600 }} />
+}
+
+export const teamFloor = defineFixture({
+  width: 960,
+  store: { repos },
+  render: () => <StaffedFloor agents={teamAgents()} />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+})
+
+export const teamBoard = defineFixture({
+  width: 960,
+  store: { repos },
+  setup: () => {
+    localStorage.setItem(FLOOR_KEY, 'mesa')
+    localStorage.setItem(
+      'orca.agentOffice.floorTeams',
+      JSON.stringify({ mesa: [GREMLIN_PET_ID, OPENCODE_PET_ID] })
+    )
+  },
+  render: () => <Stage />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas + div button')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    atWhiteboard(frame, 'pointerdown')
+    await waitFor(frame, '[role="dialog"]')
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+})
+
+export const teamBoardHover = defineFixture({
+  width: 960,
+  store: { repos },
+  setup: () => localStorage.setItem(FLOOR_KEY, 'mesa'),
+  render: () => <Stage />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas + div button')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    atWhiteboard(frame, 'pointermove')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+})
+
+// Why: mirror the office's integer-zoom centering; the whiteboard's middle is at world (48, 16).
+function atWhiteboard(frame: HTMLElement, type: 'pointerdown' | 'pointermove'): void {
+  const canvas = frame.querySelector('canvas')
+  const box = canvas?.getBoundingClientRect()
+  if (!canvas || !box) {
+    return
+  }
+  const zoom = Math.floor(Math.min(box.width / 320, box.height / 224))
+  canvas.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      clientX: box.left + Math.floor((box.width - 320 * zoom) / 2) + 48 * zoom,
+      clientY: box.top + Math.floor((box.height - 224 * zoom) / 2) + 16 * zoom
+    })
+  )
 }
 
 export const staffedFloor = defineFixture({

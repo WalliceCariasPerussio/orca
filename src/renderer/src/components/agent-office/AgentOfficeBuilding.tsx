@@ -1,18 +1,21 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import type { DashboardBucket } from '../../../../shared/dashboard-snapshot'
 import { Button } from '../ui/button'
 import { useLiveDashboardSnapshot } from '../dashboard/useLiveDashboardSnapshot'
 import { AgentTerminalDialog } from '../dashboard-popout/AgentTerminalDialog'
 import ElevatorPanel from './ElevatorPanel'
+import FloorTeamPanel from './FloorTeamPanel'
+import OfficeHoverTip, { hoverKey } from './OfficeHoverTip'
 import PetShopPanel from './PetShopPanel'
 import ReceptionDesk from './ReceptionDesk'
 import StaffPetsPanel from './StaffPetsPanel'
 import { officeAgentsFrom, tallyByFloor } from './office-agents'
-import { OfficeBuilding, type AgentHover } from './office-building'
+import { OfficeBuilding, type OfficeHover } from './office-building'
+import { useFloorTeams } from './office-floor-teams'
 import { buildFloors, LOBBY_FLOOR_ID, readRememberedFloorId } from './office-floors'
 import { useStaffPets } from './office-staff-pets'
+import { useTeamPets } from './office-team-draw'
 import { useOfficeAgentWindow } from './use-office-agent-window'
 import { useOfficeCast } from './use-office-cast'
 
@@ -27,19 +30,6 @@ const STEP_KEYS: Record<string, [number, number]> = {
   d: [1, 0]
 }
 
-function bucketLabel(bucket: DashboardBucket): string {
-  switch (bucket) {
-    case 'attention':
-      return translate('dashboardPopout.bucket.attention', 'Needs You')
-    case 'working':
-      return translate('dashboardPopout.bucket.working', 'Working')
-    case 'done':
-      return translate('dashboardPopout.bucket.done', 'Done')
-    case 'idle':
-      return translate('dashboardPopout.bucket.idle', 'Idle')
-  }
-}
-
 export default function AgentOfficeBuilding(): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -47,31 +37,55 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
   const lobbyName = translate('auto.components.agentOffice.reception.sign', 'Lobby')
   const lobbyShort = translate('auto.components.agentOffice.elevator.lobbyShort', 'L')
+  const boardLabel = translate('auto.components.agentOffice.team.boardLabel', 'Team')
   const floors = useMemo(() => buildFloors(repos, lobbyName), [repos, lobbyName])
   const [remembered] = useState(readRememberedFloorId)
   const [floorId, setFloorId] = useState(remembered ?? LOBBY_FLOOR_ID)
   const [panelOpen, setPanelOpen] = useState(false)
   const [deskAnchor, setDeskAnchor] = useState<{ left: number; top: number } | null>(null)
-  const [hovered, setHovered] = useState<AgentHover | null>(null)
-  const [windowOpen, setWindowOpen] = useState<'staff' | 'shop' | null>(null)
+  const [hovered, setHovered] = useState<OfficeHover | null>(null)
+  const [windowOpen, setWindowOpen] = useState<'staff' | 'shop' | 'team' | null>(null)
   const [staffPets, assignStaffPet] = useStaffPets()
-  const { cast, failed } = useOfficeCast(Object.values(staffPets))
+  const [floorTeams, setFloorTeam] = useFloorTeams()
+  const { cast, failed } = useOfficeCast([
+    ...Object.values(staffPets),
+    ...Object.values(floorTeams).flat()
+  ])
 
   const snapshot = useLiveDashboardSnapshot()
   const freshAgents = officeAgentsFrom(snapshot.cards, staffPets)
   // Why: the snapshot rebuilds on every status tick; reseat the floor only when what it shows changes.
   const agentsKey = freshAgents
-    .map((a) => `${a.key}:${a.floorId}:${a.bucket}:${a.petId}:${a.name}`)
+    .map((a) => `${a.key}:${a.floorId}:${a.bucket}:${a.petId}:${a.name}:${a.agentType}`)
     .join('|')
   // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the visible fields above
-  const agents = useMemo(() => freshAgents, [agentsKey])
+  const dressedByKind = useMemo(() => freshAgents, [agentsKey])
+  const agents = useTeamPets(dressedByKind, floorTeams)
   const tallies = useMemo(() => tallyByFloor(agents), [agents])
   const agentWindow = useOfficeAgentWindow(snapshot.cards)
   const openAgentWindow = agentWindow.open
 
-  const latest = useRef({ floors, floorId, remembered, lobbyName, lobbyShort, agents, cast })
+  const latest = useRef({
+    floors,
+    floorId,
+    remembered,
+    lobbyName,
+    lobbyShort,
+    boardLabel,
+    agents,
+    cast
+  })
   useLayoutEffect(() => {
-    latest.current = { floors, floorId, remembered, lobbyName, lobbyShort, agents, cast }
+    latest.current = {
+      floors,
+      floorId,
+      remembered,
+      lobbyName,
+      lobbyShort,
+      boardLabel,
+      agents,
+      cast
+    }
   })
 
   const castReady = cast !== null
@@ -91,6 +105,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       staffSprites: setup.cast.staff,
       lobbySign: setup.lobbyName,
       lobbyShort: setup.lobbyShort,
+      teamBoardLabel: setup.boardLabel,
       onPanelChange: (open) => {
         setPanelOpen(open)
         if (!open) {
@@ -104,7 +119,14 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         canvas.focus({ preventScroll: true })
         openAgentWindow(agent.key)
       },
-      onReceptionistClick: () => setDeskAnchor(buildingRef.current?.receptionistAnchor() ?? null)
+      onSpotClick: (spot) => {
+        if (spot === 'reception') {
+          setDeskAnchor(buildingRef.current?.receptionistAnchor() ?? null)
+        } else {
+          setHovered(null)
+          setWindowOpen('team')
+        }
+      }
     })
     building.setAgents(setup.agents)
     buildingRef.current = building
@@ -161,7 +183,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           const box = event.currentTarget.getBoundingClientRect()
           const next = buildingRef.current?.hover(event.clientX - box.left, event.clientY - box.top)
           setHovered((previous) =>
-            (previous?.agent.key ?? null) === (next?.agent.key ?? null) ? previous : (next ?? null)
+            hoverKey(previous) === hoverKey(next) ? previous : (next ?? null)
           )
         }}
         onPointerLeave={() => setHovered(null)}
@@ -176,28 +198,19 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           }
         }}
       />
-      {hovered ? (
-        <div
-          className="pointer-events-none absolute z-10 max-w-64 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-floating"
-          style={{ left: hovered.left, top: hovered.top }}
-        >
-          <p className="truncate font-medium">{hovered.agent.name}</p>
-          <p className="text-muted-foreground">
-            {bucketLabel(hovered.agent.bucket)} ·{' '}
-            {translate(
-              'auto.components.agentOffice.building.openTerminal',
-              'click to open the terminal'
-            )}
-          </p>
-        </div>
-      ) : null}
+      {hovered ? <OfficeHoverTip hover={hovered} /> : null}
       {cast ? (
         <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-end justify-between gap-3">
           <p className="text-xs text-muted-foreground">
-            {translate(
-              'auto.components.agentOffice.building.hint',
-              'Click the floor to walk. Click the elevator to change floors.'
-            )}
+            {currentFloor.number === 0
+              ? translate(
+                  'auto.components.agentOffice.building.hint',
+                  'Click the floor to walk. Click the elevator to change floors. Click an agent to open its terminal.'
+                )
+              : translate(
+                  'auto.components.agentOffice.building.floorHint',
+                  "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team."
+                )}
           </p>
           <span className="pointer-events-auto">
             <Button
@@ -238,6 +251,15 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         <StaffPetsPanel
           staffPets={staffPets}
           onAssign={assignStaffPet}
+          onOpenShop={() => setWindowOpen('shop')}
+          onClose={() => setWindowOpen(null)}
+        />
+      ) : null}
+      {windowOpen === 'team' && currentFloor.number !== 0 ? (
+        <FloorTeamPanel
+          floorName={currentFloor.name}
+          team={floorTeams[currentFloor.id] ?? []}
+          onChange={(petIds) => setFloorTeam(currentFloor.id, petIds)}
           onOpenShop={() => setWindowOpen('shop')}
           onClose={() => setWindowOpen(null)}
         />
