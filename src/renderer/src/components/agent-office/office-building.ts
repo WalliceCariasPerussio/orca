@@ -3,14 +3,7 @@ import type { OfficeAgent } from './office-agents'
 import { drawBuildingFrame } from './office-building-frame'
 import { isElevatorTile } from './office-elevator'
 import { ElevatorTrip } from './office-elevator-trip'
-import {
-  EMPTY_STAFF,
-  staffAt,
-  staffDrawables,
-  staffFloor,
-  staffTiles,
-  type FloorStaff
-} from './office-floor-staff'
+import { FloorCrew } from './office-floor-crew'
 import { layoutForFloor, rememberFloorId, type OfficeFloor } from './office-floors'
 import { FrameLoop, type FrameResult } from './office-frame-loop'
 import { frameAt, type PetSprite } from './office-pet-sprite'
@@ -24,8 +17,15 @@ import {
   type OfficeProjection,
   type OfficeScene
 } from './office-scene'
-import { spotAt, type OfficeSpotId } from './office-spots'
-import { createWalker, isWalking, stepWalker, type TilePoint, type Walker } from './office-walker'
+import { spotAt, type OfficeSpotId, type SpotHit } from './office-spots'
+import {
+  createWalker,
+  isWalking,
+  stepWalker,
+  type TilePoint,
+  type Walker,
+  type WorldPoint
+} from './office-walker'
 import {
   RECEPTION_ENTRANCE_TILE,
   RECEPTIONIST_BLOCKED,
@@ -48,11 +48,13 @@ export type OfficeBuildingSetup = {
   lobbyShort: string
   /** Written on each project floor's whiteboard. */
   teamBoardLabel: string
+  /** On the plaque of each free desk, where clicking hires an agent. */
+  hireLabel: string
   onPanelChange: (open: boolean) => void
   onFloorChange: (floor: OfficeFloor) => void
   /** Opens the window of this pane's agent; a sub-agent without a terminal opens its parent's. */
   onAgentClick: (paneKey: string) => void
-  /** You clicked the receptionist or a floor's team board, and are walking up to it. */
+  /** You clicked the receptionist, a floor's team board or a free desk, and are walking up to it. */
   onSpotClick: (spot: OfficeSpotId) => void
 }
 
@@ -71,7 +73,7 @@ export class OfficeBuilding {
   private avatar: PetSprite
   private readonly trip: ElevatorTrip
   private agents: OfficeAgent[] = []
-  private staff: FloorStaff = EMPTY_STAFF
+  private readonly crew: FloorCrew
   private staffSprites: ReadonlyMap<string, PetSprite>
 
   private animation: Animation = 'idle'
@@ -87,6 +89,7 @@ export class OfficeBuilding {
     this.floors = setup.floors
     this.floor = setup.floors.find((f) => f.id === setup.floorId) ?? setup.floors[0]
     this.staffSprites = setup.staffSprites
+    this.crew = new FloorCrew(setup.hireLabel)
     this.scene = this.sceneFor(this.floor)
     this.avatar = setup.avatar
     const entering = setup.startAtEntrance && this.floor.number === 0
@@ -148,12 +151,12 @@ export class OfficeBuilding {
       return
     }
     const world = worldAtCss(this.projection, cssX, cssY)
-    const clicked = staffAt(this.staff, world)
+    const clicked = this.crew.agentAt(world)
     if (clicked) {
       this.setup.onAgentClick(clicked.opens)
       return
     }
-    const spot = spotAt(this.floor.number === 0, world)
+    const spot = this.spotAt(world)
     if (spot) {
       this.walkAlong(this.pathTo(spot.front))
       this.setup.onSpotClick(spot.id)
@@ -172,12 +175,12 @@ export class OfficeBuilding {
       return null
     }
     const world = worldAtCss(this.projection, cssX, cssY)
-    const found = staffAt(this.staff, world)
+    const found = this.crew.agentAt(world)
     if (found) {
       const at = cssAtWorld(this.projection, found.tip.x, found.tip.y)
       return { kind: 'agent', agent: found.agent, ...at }
     }
-    const spot = spotAt(this.floor.number === 0, world)
+    const spot = this.spotAt(world)
     return spot?.tip
       ? { kind: 'spot', spot: spot.id, ...cssAtWorld(this.projection, spot.tip.x, spot.tip.y) }
       : null
@@ -234,16 +237,20 @@ export class OfficeBuilding {
     this.loop.dispose()
   }
 
+  private spotAt(world: WorldPoint): SpotHit | null {
+    return spotAt(this.floor.number === 0, world) ?? this.crew.freeDeskAt(world)
+  }
+
   private sceneFor(floor: OfficeFloor): OfficeScene {
     if (floor.number === 0) {
+      this.crew.clear()
       return buildOfficeScene(layoutForFloor(floor, 0), RECEPTIONIST_BLOCKED)
     }
-    this.staff = staffFloor(this.agents, floor.id, this.staffSprites)
-    return buildOfficeScene(layoutForFloor(floor, this.staff.deskCount), staffTiles(this.staff))
+    this.crew.seat(this.agents, floor.id, this.staffSprites)
+    return buildOfficeScene(layoutForFloor(floor, this.crew.deskCount), this.crew.blockedTiles())
   }
 
   private seatStaff(): void {
-    this.staff = EMPTY_STAFF
     this.scene = this.sceneFor(this.floor)
     if (this.projection) {
       const ratio = this.projection.devicePixelRatio
@@ -305,7 +312,7 @@ export class OfficeBuilding {
     const you = frameAt(this.avatar[animation], now - this.animationStart)
     const receptionist = this.floor.number === 0 ? this.setup.receptionist : null
     const atDesk = receptionist ? frameAt(receptionist.idle, now) : null
-    const staff = staffDrawables(this.staff, now, this.projection)
+    const staff = this.crew.drawables(now, this.projection)
     drawBuildingFrame(context, {
       scene: this.scene,
       projection: this.projection,

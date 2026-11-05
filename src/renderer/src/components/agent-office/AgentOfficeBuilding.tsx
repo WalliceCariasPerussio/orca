@@ -4,6 +4,7 @@ import { useAppStore } from '@/store'
 import { Button } from '../ui/button'
 import { useLiveDashboardSnapshot } from '../dashboard/useLiveDashboardSnapshot'
 import { AgentTerminalDialog } from '../dashboard-popout/AgentTerminalDialog'
+import { openHeaderCreateComposer } from '../sidebar/worktree-list/rows/header-create-workspace-target'
 import ElevatorPanel from './ElevatorPanel'
 import FloorTeamPanel from './FloorTeamPanel'
 import OfficeHoverTip, { hoverKey } from './OfficeHoverTip'
@@ -38,6 +39,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const lobbyName = translate('auto.components.agentOffice.reception.sign', 'Lobby')
   const lobbyShort = translate('auto.components.agentOffice.elevator.lobbyShort', 'L')
   const boardLabel = translate('auto.components.agentOffice.team.boardLabel', 'Team')
+  const hireLabel = translate('auto.components.agentOffice.hire.plaque', 'Hiring')
   const floors = useMemo(() => buildFloors(repos, lobbyName), [repos, lobbyName])
   const [remembered] = useState(readRememberedFloorId)
   const [floorId, setFloorId] = useState(remembered ?? LOBBY_FLOOR_ID)
@@ -85,6 +87,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     lobbyName,
     lobbyShort,
     boardLabel,
+    hireLabel,
     agents,
     cast
   })
@@ -96,6 +99,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       lobbyName,
       lobbyShort,
       boardLabel,
+      hireLabel,
       agents,
       cast
     }
@@ -119,6 +123,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       lobbySign: setup.lobbyName,
       lobbyShort: setup.lobbyShort,
       teamBoardLabel: setup.boardLabel,
+      hireLabel: setup.hireLabel,
       onPanelChange: (open) => {
         setPanelOpen(open)
         if (!open) {
@@ -135,6 +140,12 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       onSpotClick: (spot) => {
         if (spot === 'reception') {
           setDeskAnchor(buildingRef.current?.receptionistAnchor() ?? null)
+        } else if (spot === 'freeDesk') {
+          setHovered(null)
+          const repo = useAppStore.getState().repos.find((r) => r.id === latest.current.floorId)
+          if (repo) {
+            openHeaderCreateComposer(repo, { pinHost: false })
+          }
         } else {
           setHovered(null)
           setWindowOpen('team')
@@ -222,7 +233,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
                 )
               : translate(
                   'auto.components.agentOffice.building.floorHint',
-                  "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team."
+                  "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team. Click a free desk to hire an agent."
                 )}
           </p>
           <span className="pointer-events-auto">

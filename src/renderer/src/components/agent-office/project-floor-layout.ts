@@ -42,10 +42,11 @@ function hueOf(hex: string | undefined): number {
   return Math.round((sector * 60 + 360) % 360)
 }
 
+// Why: one desk more than agents, while the room has space, so there is always a seat to hire for.
 function deskOrigins(agentCount: number): TilePoint[] {
   const rows = Math.min(
     DESK_ROWS.length,
-    Math.max(MIN_DESK_ROWS, Math.ceil(agentCount / DESK_COLS.length))
+    Math.max(MIN_DESK_ROWS, Math.ceil((agentCount + 1) / DESK_COLS.length))
   )
   return DESK_ROWS.slice(0, rows).flatMap((row) => DESK_COLS.map((col) => ({ col, row })))
 }

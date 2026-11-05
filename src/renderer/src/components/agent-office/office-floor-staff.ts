@@ -17,7 +17,10 @@ import { FIGURE_HEIGHT } from './office-figures'
 import type { PetSprite } from './office-pet-sprite'
 import type { DepthDrawable, OfficeProjection } from './office-scene'
 import { groupBySector, plaqueDrawables, sectorColor, type DeskPlaque } from './office-sectors'
+import type { SpotHit } from './office-spots'
 import type { WorldPoint } from './office-walker'
+import { deskSeats, type DeskSeat } from './project-floor-layout'
+import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
 /** Who works on one floor: agents at desks and the sub-agents standing by them. */
 export type FloorStaff = {
@@ -25,7 +28,9 @@ export type FloorStaff = {
   deskCount: number
   desks: DeskAgent[]
   helpers: DeskHelpers
-  /** Each desk's plaque: the workspace of the agent at it. */
+  /** Desks nobody sits at; clicking one hires an agent for this floor's project. */
+  freeDesks: DeskSeat[]
+  /** Each desk's plaque: the workspace of the agent at it, or the hiring sign. */
   plaques: DeskPlaque[]
 }
 
@@ -33,6 +38,7 @@ export const EMPTY_STAFF: FloorStaff = {
   deskCount: 0,
   desks: [],
   helpers: { standing: [], more: [] },
+  freeDesks: [],
   plaques: []
 }
 
@@ -42,21 +48,42 @@ export type StaffHit = { agent: OfficeAgent; opens: string; tip: WorldPoint }
 export function staffFloor(
   agents: readonly OfficeAgent[],
   floorId: string,
-  sprites: ReadonlyMap<string, PetSprite>
+  sprites: ReadonlyMap<string, PetSprite>,
+  hireLabel: string
 ): FloorStaff {
   const atDesks = agents.filter((agent) => agent.floorId === floorId && !agent.parentKey)
   const desks = seatAgents(groupBySector(atDesks), sprites)
-  const plaques = desks.map(({ agent, seat }) => ({
-    desk: seat.desk,
-    label: agent.worktreeName,
-    color: sectorColor(agent.worktreeId)
-  }))
+  const taken = new Set(seatTileKeys(desks))
+  const freeDesks = deskSeats(atDesks.length).filter(
+    ({ tile }) => !taken.has(`${tile.col},${tile.row}`)
+  )
+  const plaques = [
+    ...desks.map(({ agent, seat }) => ({
+      desk: seat.desk,
+      label: agent.worktreeName,
+      color: sectorColor(agent.worktreeId)
+    })),
+    ...freeDesks.map((seat) => ({ desk: seat.desk, label: hireLabel, color: null }))
+  ]
   return {
     deskCount: atDesks.length,
     desks,
     helpers: helpersFor(desks, agents, sprites),
+    freeDesks,
     plaques
   }
+}
+
+/** A free desk under a point, chair included: you walk to its chair to hire. */
+export function freeDeskAt(staff: FloorStaff, world: WorldPoint): SpotHit | null {
+  const seat = staff.freeDesks.find(({ desk }) => {
+    const col = Math.floor(world.x / TILE_SIZE) - desk.col
+    const row = Math.floor(world.y / TILE_SIZE) - desk.row
+    return col >= 0 && col < 3 && row >= -1 && row < 2
+  })
+  return seat
+    ? { id: 'freeDesk', front: seat.tile, tip: { x: seat.feet.x, y: seat.feet.y - FIGURE_HEIGHT } }
+    : null
 }
 
 export function staffTiles(staff: FloorStaff): string[] {

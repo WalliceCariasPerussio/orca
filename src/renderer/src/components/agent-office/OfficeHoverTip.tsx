@@ -26,7 +26,7 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
     : `spot:${hover.spot}:${place}`
 }
 
-/** The label over whatever the pointer rests on: an agent, or the team board. */
+/** The label over whatever the pointer rests on: an agent, the team board or a free desk. */
 export default function OfficeHoverTip({ hover }: { hover: OfficeHover }): React.JSX.Element {
   return (
     <div
@@ -46,6 +46,18 @@ export default function OfficeHoverTip({ hover }: { hover: OfficeHover }): React
             {translate(
               'auto.components.agentOffice.building.openTerminal',
               'click to open the terminal'
+            )}
+          </p>
+        </>
+      ) : hover.spot === 'freeDesk' ? (
+        <>
+          <p className="truncate font-medium">
+            {translate('auto.components.agentOffice.hire.desk', 'Free desk')}
+          </p>
+          <p className="text-muted-foreground">
+            {translate(
+              'auto.components.agentOffice.hire.deskHint',
+              'click to hire an agent for this project'
             )}
           </p>
         </>

@@ -97,6 +97,7 @@ function StaffedFloor({ agents = fakeAgents() }: { agents?: OfficeAgent[] }): Re
       lobbySign: 'Recepção',
       lobbyShort: 'T',
       teamBoardLabel: 'Equipe',
+      hireLabel: 'Vaga',
       onPanelChange: () => {},
       onFloorChange: () => {},
       onAgentClick: () => {},
@@ -145,7 +146,7 @@ export const teamBoard = defineFixture({
   interact: async (frame) => {
     await waitFor(frame, 'canvas + div button')
     await new Promise((resolve) => setTimeout(resolve, 300))
-    atWhiteboard(frame, 'pointerdown')
+    pointAtWorld(frame, 'pointerdown', 48, 16)
     await waitFor(frame, '[role="dialog"]')
     await new Promise((resolve) => setTimeout(resolve, 500))
   }
@@ -159,13 +160,31 @@ export const teamBoardHover = defineFixture({
   interact: async (frame) => {
     await waitFor(frame, 'canvas + div button')
     await new Promise((resolve) => setTimeout(resolve, 300))
-    atWhiteboard(frame, 'pointermove')
+    pointAtWorld(frame, 'pointermove', 48, 16)
     await new Promise((resolve) => setTimeout(resolve, 300))
   }
 })
 
-// Why: mirror the office's integer-zoom centering; the whiteboard's middle is at world (48, 16).
-function atWhiteboard(frame: HTMLElement, type: 'pointerdown' | 'pointermove'): void {
+export const freeDeskHover = defineFixture({
+  width: 960,
+  store: { repos },
+  setup: () => localStorage.setItem(FLOOR_KEY, 'mesa'),
+  render: () => <Stage />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas + div button')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    pointAtWorld(frame, 'pointermove', 120, 96)
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+})
+
+// Why: mirror the office's integer-zoom centering for a 20x14-tile room.
+function pointAtWorld(
+  frame: HTMLElement,
+  type: 'pointerdown' | 'pointermove',
+  worldX: number,
+  worldY: number
+): void {
   const canvas = frame.querySelector('canvas')
   const box = canvas?.getBoundingClientRect()
   if (!canvas || !box) {
@@ -175,8 +194,8 @@ function atWhiteboard(frame: HTMLElement, type: 'pointerdown' | 'pointermove'): 
   canvas.dispatchEvent(
     new PointerEvent(type, {
       bubbles: true,
-      clientX: box.left + Math.floor((box.width - 320 * zoom) / 2) + 48 * zoom,
-      clientY: box.top + Math.floor((box.height - 224 * zoom) / 2) + 16 * zoom
+      clientX: box.left + Math.floor((box.width - 320 * zoom) / 2) + worldX * zoom,
+      clientY: box.top + Math.floor((box.height - 224 * zoom) / 2) + worldY * zoom
     })
   )
 }

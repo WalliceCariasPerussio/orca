@@ -4,16 +4,20 @@ import { TEAM_BOARD, TEAM_BOARD_FRONT_TILE } from './project-floor-layout'
 import { RECEPTION_COUNTER_FRONT_TILE, RECEPTIONIST_FEET } from './reception-layout'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
-export type OfficeSpotId = 'reception' | 'teamBoard'
+export type OfficeSpotId = 'reception' | 'teamBoard' | 'freeDesk'
+
+/** A clicked spot: where you walk to use it, and where its hover label points. */
+export type SpotHit = {
+  id: OfficeSpotId
+  front: TilePoint
+  /** Only for spots nobody would guess are clickable. */
+  tip?: WorldPoint
+}
 
 /** Something in a room you click to use: you walk up to it while its window opens. */
-type OfficeSpot = {
-  id: OfficeSpotId
+type OfficeSpot = SpotHit & {
   inLobby: boolean
-  front: TilePoint
   contains: (world: WorldPoint) => boolean
-  /** Where its hover label points, for spots nobody would guess are clickable. */
-  tip?: WorldPoint
 }
 
 const HIT_HALF_WIDTH = 9
