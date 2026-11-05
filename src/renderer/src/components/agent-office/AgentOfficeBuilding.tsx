@@ -75,6 +75,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         a.agentType,
         a.worktreeId,
         a.worktreeName,
+        a.since,
         a.parentKey ?? '',
         ...a.subagents.map((s) => `${s.key}=${s.bucket}=${s.name}`)
       ].join(':')
@@ -246,7 +247,12 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           }
         }}
       />
-      {hovered ? <OfficeHoverTip hover={hovered} /> : null}
+      {hovered ? (
+        <OfficeHoverTip
+          hover={hovered}
+          thought={hovered.kind === 'agent' ? thoughts.get(hovered.agent.key) : undefined}
+        />
+      ) : null}
       {cast ? (
         <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-end justify-between gap-3">
           <p className="text-xs text-muted-foreground">

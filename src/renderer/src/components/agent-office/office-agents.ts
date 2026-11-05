@@ -22,6 +22,8 @@ export type OfficeAgent = {
   worktreeId: string
   worktreeName: string
   startedAt: number
+  /** When it entered its current state; 0 when unknown. */
+  since: number
   /** The agent at a desk that spawned this one; it then stands by that desk instead of its own. */
   parentKey?: string
   /** Running sub-agents without a terminal, standing by this agent's desk. */
@@ -91,6 +93,7 @@ export function officeAgentsFrom(
           worktreeId: card.worktreeId,
           worktreeName: card.worktreeName,
           startedAt: card.startedAt,
+          since: card.stateChangedAt,
           parentKey,
           subagents
         }

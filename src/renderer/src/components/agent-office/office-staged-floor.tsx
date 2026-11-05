@@ -37,6 +37,7 @@ export function fakeAgents(): OfficeAgent[] {
     worktreeId: `wt-${worktree}`,
     worktreeName: worktree,
     startedAt: i,
+    since: Date.now() - (i + 1) * 4 * 60_000,
     subagents: []
   }))
 }

@@ -163,7 +163,7 @@ export class OfficeBuilding {
     const found = this.crew.agentAt(world)
     if (found) {
       const at = cssAtWorld(this.projection, found.tip.x, found.tip.y)
-      return { kind: 'agent', agent: found.agent, ...at }
+      return { kind: 'agent', agent: found.agent, seenAt: Date.now(), ...at }
     }
     const spot = this.crew.spotAt(this.floor.number === 0, world)
     return spot?.tip

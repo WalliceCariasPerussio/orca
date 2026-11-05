@@ -1,4 +1,5 @@
 import { translate } from '@/i18n/i18n'
+import { formatUiRelativeTime } from '@/i18n/relative-time-format'
 import type { DashboardBucket } from '../../../../shared/dashboard-snapshot'
 import type { OfficeHover } from './office-building-setup'
 
@@ -27,10 +28,17 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
 }
 
 /** The label over whatever the pointer rests on: an agent, the team board or a free desk. */
-export default function OfficeHoverTip({ hover }: { hover: OfficeHover }): React.JSX.Element {
+export default function OfficeHoverTip({
+  hover,
+  thought
+}: {
+  hover: OfficeHover
+  /** What the agent under the pointer thinks, in full. */
+  thought?: string
+}): React.JSX.Element {
   return (
     <div
-      className="pointer-events-none absolute z-10 max-w-64 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-floating"
+      className="pointer-events-none absolute z-10 max-w-72 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-floating"
       style={{ left: hover.left, top: hover.top }}
     >
       {hover.kind === 'agent' ? (
@@ -42,12 +50,19 @@ export default function OfficeHoverTip({ hover }: { hover: OfficeHover }): React
             })}
           </p>
           <p className="text-muted-foreground">
-            {bucketLabel(hover.agent.bucket)} ·{' '}
+            {bucketLabel(hover.agent.bucket)}
+            {hover.agent.since > 0
+              ? ` · ${formatUiRelativeTime(hover.agent.since - hover.seenAt)}`
+              : ''}{' '}
+            ·{' '}
             {translate(
               'auto.components.agentOffice.building.openTerminal',
               'click to open the terminal'
             )}
           </p>
+          {thought ? (
+            <p className="mt-1 line-clamp-3 border-t border-border pt-1 italic">{thought}</p>
+          ) : null}
         </>
       ) : hover.spot === 'freeDesk' ? (
         <>

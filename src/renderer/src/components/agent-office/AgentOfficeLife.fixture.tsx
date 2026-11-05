@@ -1,7 +1,9 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
-import { StaffedFloor, stagedRepos, waitFor } from './office-staged-floor'
+import OfficeHoverTip from './OfficeHoverTip'
+import { fakeAgents, StaffedFloor, stagedRepos, waitFor } from './office-staged-floor'
 
 const TURN_MS = 6000
+const NOW = Date.now()
 
 const thoughts = new Map([
   ['pane-0', 'Editando office-roaming.ts'],
@@ -26,4 +28,16 @@ export const thinking = defineFixture({
     await waitFor(frame, 'canvas[data-ready]')
     await untilCloud()
   }
+})
+
+export const hoverTip = defineFixture({
+  width: 700,
+  render: () => (
+    <div className="relative h-40">
+      <OfficeHoverTip
+        hover={{ kind: 'agent', agent: fakeAgents()[1], seenAt: NOW, left: 350, top: 130 }}
+        thought="Posso apagar a pasta dist antes de rodar o build de produção?"
+      />
+    </div>
+  )
 })
