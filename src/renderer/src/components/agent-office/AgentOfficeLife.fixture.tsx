@@ -1,5 +1,6 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import type { DashboardCardReview } from '../../../../shared/dashboard-snapshot'
+import AgentOfficeBuilding from './AgentOfficeBuilding'
 import OfficeHoverTip from './OfficeHoverTip'
 import { agentsWith, fakeAgents, StaffedFloor, stagedRepos, waitFor } from './office-staged-floor'
 
@@ -96,5 +97,24 @@ export const comesAndGoes = defineFixture({
   interact: async (frame) => {
     await waitFor(frame, 'canvas[data-ready]')
     await new Promise((resolve) => setTimeout(resolve, 1100))
+  }
+})
+
+export const keyRide = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  setup: () => localStorage.setItem('orca.agentOffice.floorId', 'mesa'),
+  render: () => (
+    <div className="flex flex-col" style={{ height: 600 }}>
+      <AgentOfficeBuilding />
+    </div>
+  ),
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas + div button')
+    frame.querySelector<HTMLButtonElement>('canvas + div button')?.click()
+    await waitFor(frame, '[role="dialog"]')
+    const panel = frame.querySelector('[role="dialog"]')
+    panel?.dispatchEvent(new KeyboardEvent('keydown', { key: '3', bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve, 4500))
   }
 })

@@ -89,6 +89,13 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const tallies = useMemo(() => tallyByFloor(agents), [agents])
   const waiting = useMemo(() => needingYou(agents, floors, floorId), [agents, floors, floorId])
   const visits = useRef(0)
+  /** Off to the next agent that needs you, round the list on each press. */
+  const visitNext = (): void => {
+    const next = waiting.at(visits.current++ % Math.max(1, waiting.length))
+    if (next) {
+      buildingRef.current?.visit(next.key)
+    }
+  }
   const agentWindow = useOfficeAgentWindow(snapshot.cards)
   const openAgentWindow = agentWindow.open
 
@@ -222,7 +229,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         role="application"
         aria-label={translate(
           'auto.components.agentOffice.building.label',
-          'Agent Office. Arrow keys walk, Enter calls the elevator.'
+          'Agent Office. Arrow keys walk, Enter calls the elevator, N goes to who needs you; in the elevator, a floor number rides there.'
         )}
         className="absolute inset-0 size-full cursor-pointer outline-none"
         onPointerDown={(event) => {
@@ -246,6 +253,9 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           } else if (event.key === 'Enter') {
             event.preventDefault()
             buildingRef.current?.callElevator()
+          } else if (event.key === 'n' || event.key === 'N') {
+            event.preventDefault()
+            visitNext()
           }
         }}
       />
@@ -276,12 +286,9 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
                 disabled={panelOpen}
                 title={translate(
                   'auto.components.agentOffice.visit.hint',
-                  "Takes the elevator if needed, walks up to the agent's desk and opens its terminal. Click again for the next one."
+                  "Takes the elevator if needed, walks up to the agent's desk and opens its terminal. Click again, or press N, for the next one."
                 )}
-                onClick={() => {
-                  const next = waiting[visits.current++ % waiting.length]
-                  buildingRef.current?.visit(next.key)
-                }}
+                onClick={visitNext}
               >
                 <span aria-hidden className="size-1.5 rounded-full bg-destructive" />
                 {translate(
