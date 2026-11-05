@@ -1,4 +1,5 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
+import type { DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import OfficeHoverTip from './OfficeHoverTip'
 import { agentsWith, fakeAgents, StaffedFloor, stagedRepos, waitFor } from './office-staged-floor'
 
@@ -61,4 +62,23 @@ export const endedBadly = defineFixture({
     await waitFor(frame, 'canvas[data-ready]')
     await new Promise((resolve) => setTimeout(resolve, 400))
   }
+})
+
+const REVIEWS = new Map<string, DashboardCardReview>([
+  ['feat/login-social', { number: 42, state: 'open' }],
+  ['fix/cache', { number: 1337, state: 'merged' }]
+])
+
+export const reviews = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => (
+    <StaffedFloor
+      agents={fakeAgents().map((agent) => {
+        const review = REVIEWS.get(agent.worktreeName)
+        return review ? { ...agent, review } : agent
+      })}
+    />
+  ),
+  interact: (frame) => waitFor(frame, 'canvas[data-ready]')
 })

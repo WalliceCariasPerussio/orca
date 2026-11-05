@@ -1,6 +1,6 @@
 import { translate } from '@/i18n/i18n'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
-import type { DashboardBucket } from '../../../../shared/dashboard-snapshot'
+import type { DashboardBucket, DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import type { OfficeVerdict } from './office-agents'
 import type { OfficeHover } from './office-building-setup'
 
@@ -25,6 +25,19 @@ function stateLabel(bucket: DashboardBucket, verdict: OfficeVerdict | undefined)
     return translate('auto.components.AgentStateDot.interrupted', 'Interrupted')
   }
   return bucketLabel(bucket)
+}
+
+function reviewLabel(review: DashboardCardReview): string {
+  switch (review.state) {
+    case 'open':
+      return translate('dashboardPopout.card.review.open', 'Open review')
+    case 'draft':
+      return translate('dashboardPopout.card.review.draft', 'Draft review')
+    case 'merged':
+      return translate('dashboardPopout.card.review.merged', 'Merged review')
+    case 'closed':
+      return translate('dashboardPopout.card.review.closed', 'Closed review')
+  }
 }
 
 /** Same label in the same place: keeps the tip still as the pointer moves, but not after a resize or a new state. */
@@ -59,6 +72,9 @@ export default function OfficeHoverTip({
             {translate('auto.components.agentOffice.building.workspace', 'Workspace: {{value0}}', {
               value0: hover.agent.worktreeName
             })}
+            {hover.agent.review
+              ? ` · ${reviewLabel(hover.agent.review)} #${hover.agent.review.number}`
+              : ''}
           </p>
           <p className="text-muted-foreground">
             {stateLabel(hover.agent.bucket, hover.agent.verdict)}

@@ -1,7 +1,8 @@
 import type {
   DashboardBucket,
   DashboardCard,
-  DashboardCardDotState
+  DashboardCardDotState,
+  DashboardCardReview
 } from '../../../../shared/dashboard-snapshot'
 import { roleForAgentType, type StaffPets } from './office-staff-pets'
 
@@ -21,6 +22,8 @@ export type OfficeAgent = {
   /** The workspace it works in; agents of one workspace sit together as a sector. */
   worktreeId: string
   worktreeName: string
+  /** The workspace's pull request, when it has one. */
+  review?: DashboardCardReview
   startedAt: number
   /** When it entered its current state; 0 when unknown. */
   since: number
@@ -104,6 +107,7 @@ export function officeAgentsFrom(
           petId: staffPets[roleForAgentType(card.agentType)],
           worktreeId: card.worktreeId,
           worktreeName: card.worktreeName,
+          review: card.review,
           startedAt: card.startedAt,
           since: card.stateChangedAt,
           verdict: endedBadly(card),

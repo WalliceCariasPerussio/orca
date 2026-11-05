@@ -63,7 +63,8 @@ export function staffFloor(
     ...desks.map(({ agent, seat }) => ({
       desk: seat.desk,
       label: agent.worktreeName,
-      color: sectorColor(agent.worktreeId)
+      color: sectorColor(agent.worktreeId),
+      review: agent.review
     })),
     ...freeDesks.map((seat) => ({ desk: seat.desk, label: hireLabel, color: null }))
   ]

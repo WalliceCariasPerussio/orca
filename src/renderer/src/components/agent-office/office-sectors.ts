@@ -1,3 +1,4 @@
+import type { DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import type { OfficeAgent } from './office-agents'
 import {
   SIGN_BORDER,
@@ -10,12 +11,24 @@ import { toss } from './office-team-draw'
 import type { TilePoint } from './office-walker'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
-/** What a desk's plaque says, and the color strip of its sector. */
-export type DeskPlaque = { desk: TilePoint; label: string; color: string | null }
+/** What a desk's plaque says, the color strip of its sector, and its workspace's pull request. */
+export type DeskPlaque = {
+  desk: TilePoint
+  label: string
+  color: string | null
+  review?: DashboardCardReview
+}
 
 /** The plaque on a desk's front panel, in world pixels from the desk's corner. */
 const PLAQUE = { x: 3, y: 25, width: 42, height: 7 }
 const STRIPE_WIDTH = 3
+/** GitHub's colors for a pull request that is open, a draft, merged or closed. */
+const REVIEW_COLORS: Record<DashboardCardReview['state'], string> = {
+  open: '#3fb950',
+  draft: '#8b949e',
+  merged: '#a371f7',
+  closed: '#f85149'
+}
 const FONT_SIZE = 5
 /** Desks sort at their bottom edge; the plaque sits just in front of its desk. */
 const DESK_DEPTH = 2 * TILE_SIZE + 0.6
@@ -70,12 +83,20 @@ function drawPlaque(
     context.fillRect(x + zoom, y + zoom, STRIPE_WIDTH * zoom, height - 2 * zoom)
     textX += STRIPE_WIDTH * zoom
   }
-  context.fillStyle = SIGN_TEXT
   context.font = `700 ${FONT_SIZE * zoom}px ui-monospace, "Cascadia Mono", Consolas, monospace`
   context.textAlign = 'left'
   context.textBaseline = 'middle'
-  const label = fitted(context, plaque.label, x + width - 2 * zoom - textX)
-  context.fillText(label, textX, y + height / 2 + zoom / 2)
+  const middle = y + height / 2 + zoom / 2
+  let right = x + width - 2 * zoom
+  if (plaque.review) {
+    const tag = `#${plaque.review.number}`
+    right -= context.measureText(tag).width
+    context.fillStyle = REVIEW_COLORS[plaque.review.state]
+    context.fillText(tag, right, middle)
+    right -= zoom
+  }
+  context.fillStyle = SIGN_TEXT
+  context.fillText(fitted(context, plaque.label, right - textX), textX, middle)
 }
 
 export function plaqueDrawables(
