@@ -1,7 +1,7 @@
 import { translate } from '@/i18n/i18n'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
 import type { DashboardBucket, DashboardCardReview } from '../../../../shared/dashboard-snapshot'
-import type { OfficeVerdict } from './office-agents'
+import { isNapping, type OfficeAgent } from './office-agents'
 import type { OfficeHover } from './office-building-setup'
 
 function bucketLabel(bucket: DashboardBucket): string {
@@ -17,7 +17,11 @@ function bucketLabel(bucket: DashboardBucket): string {
   }
 }
 
-function stateLabel(bucket: DashboardBucket, verdict: OfficeVerdict | undefined): string {
+function stateLabel(agent: OfficeAgent, time: number): string {
+  const { bucket, verdict } = agent
+  if (isNapping(agent, time)) {
+    return translate('auto.components.agentOffice.building.napping', 'Dozing')
+  }
   if (verdict === 'failed') {
     return translate('auto.components.AgentStateDot.failed', 'Failed')
   }
@@ -77,7 +81,7 @@ export default function OfficeHoverTip({
               : ''}
           </p>
           <p className="text-muted-foreground">
-            {stateLabel(hover.agent.bucket, hover.agent.verdict)}
+            {stateLabel(hover.agent, hover.seenAt)}
             {hover.agent.since > 0
               ? ` · ${formatUiRelativeTime(hover.agent.since - hover.seenAt)}`
               : ''}{' '}

@@ -40,6 +40,22 @@ export type OfficeVerdict = 'failed' | 'interrupted'
 
 export type FloorTally = Record<DashboardBucket, number>
 
+/** An agent idle this long dozes off, so the ones left waiting stand out. */
+const NAP_AFTER_MS = 20 * 60_000
+
+/** True once an idle agent has been idle long enough to doze, at a time in epoch milliseconds. */
+export function isNapping(agent: OfficeAgent, time: number): boolean {
+  return agent.bucket === 'idle' && agent.since > 0 && time - agent.since >= NAP_AFTER_MS
+}
+
+/** How long until an idle agent dozes off; Infinity if it never will or already does. */
+export function untilNap(agent: OfficeAgent, time: number): number {
+  if (agent.bucket !== 'idle' || agent.since <= 0 || isNapping(agent, time)) {
+    return Number.POSITIVE_INFINITY
+  }
+  return agent.since + NAP_AFTER_MS - time
+}
+
 const STANDING_BUCKETS: ReadonlySet<DashboardBucket> = new Set(['working', 'attention'])
 
 function subagentBucket(dotState: DashboardCardDotState): DashboardBucket | null {

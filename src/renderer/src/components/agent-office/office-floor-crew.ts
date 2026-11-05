@@ -1,4 +1,4 @@
-import type { OfficeAgent } from './office-agents'
+import { untilNap, type OfficeAgent } from './office-agents'
 import { Cheers } from './office-cheers'
 import { daylightAt, deskLamp } from './office-daylight'
 import { Departures } from './office-departures'
@@ -148,7 +148,8 @@ export class FloorCrew {
     if (turn.thinker && text) {
       drawn.drawables.push(thoughtCloud(text, turn.thinker.head, projection))
     }
-    const holdMs = Math.min(drawn.holdMs, this.roaming.wakeInMs(now), turn.holdMs)
+    const napMs = Math.min(...this.staff.desks.map(({ agent }) => untilNap(agent, Date.now())))
+    const holdMs = Math.min(drawn.holdMs, this.roaming.wakeInMs(now), turn.holdMs, napMs)
     return { ...drawn, holdMs }
   }
 }

@@ -1,3 +1,4 @@
+import { isNapping } from './office-agents'
 import { seatedStance, type AgentStance, type DeskAgent } from './office-desk-agents'
 import { ELEVATOR_FRONT_TILE } from './office-room-grid'
 import type { OfficeScene } from './office-scene'
@@ -154,7 +155,8 @@ export class Roaming {
       walking: isWalking(walker) ? walker.facing : null,
       lift: 0,
       atDesk: seated,
-      mug: roam.mug
+      mug: roam.mug,
+      napping: isNapping(desk.agent, Date.now())
     }
   }
 
@@ -242,6 +244,11 @@ export class Roaming {
     if (roam.seated && roam.nextAt === 0) {
       const span = desk.agent.bucket === 'done' ? LEAVE_AFTER_DONE_MS : LEAVE_AFTER_IDLE_MS
       roam.nextAt = now + spanOf(span, `${desk.agent.key}:leave:${roam.moves}`)
+      return
+    }
+    // Why: one that has idled a long while dozes where it rests, until something wakes it.
+    if (!roam.seated && roam.route.length === 0 && isNapping(desk.agent, Date.now())) {
+      roam.nextAt = 0
       return
     }
     if ([...this.roams.values()].filter((r) => r.target && !r.returning).length >= MAX_STROLLING) {

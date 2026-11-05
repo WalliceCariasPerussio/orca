@@ -19430,7 +19430,8 @@
           "hint": "Click the floor to walk. Click the elevator to change floors. Click an agent to open its terminal.",
           "floorHint": "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team. Click a free desk to hire an agent.",
           "openTerminal": "click to open the terminal",
-          "workspace": "Workspace: {{value0}}"
+          "workspace": "Workspace: {{value0}}",
+          "napping": "Dozing"
         },
         "elevator": {
           "title": "Elevator",

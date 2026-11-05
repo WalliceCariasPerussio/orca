@@ -20031,7 +20031,8 @@
           "hint": "Clique no chão para andar. Clique no elevador para trocar de andar. Clique num agente para abrir o terminal dele.",
           "floorHint": "Clique no chão para andar. Clique num agente para ver o terminal dele. Clique no quadro branco para escolher a equipe do andar. Clique numa mesa vaga para contratar um agente.",
           "openTerminal": "clique para abrir o terminal",
-          "workspace": "Workspace: {{value0}}"
+          "workspace": "Workspace: {{value0}}",
+          "napping": "Cochilando"
         },
         "elevator": {
           "title": "Elevador",

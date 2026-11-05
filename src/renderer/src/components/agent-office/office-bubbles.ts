@@ -68,8 +68,35 @@ const STOPPED_BUBBLE = withGlyph(RESTING, [
   [6, 5]
 ])
 
+const NAPPING_BUBBLE = withGlyph(RESTING, [
+  [5, 2],
+  [6, 2],
+  [7, 2],
+  [8, 2],
+  [7, 3],
+  [6, 4],
+  [5, 5],
+  [6, 5],
+  [7, 5],
+  [8, 5],
+  [2, 5],
+  [3, 5],
+  [4, 5],
+  [3, 6],
+  [2, 7],
+  [3, 7],
+  [4, 7]
+])
+
 /** Sprite shown over an agent's head; a turn that failed or was stopped shows that instead of ✓. */
-export function bubbleFor(bucket: DashboardBucket, verdict?: OfficeVerdict): SpriteData {
+export function bubbleFor(
+  bucket: DashboardBucket,
+  verdict?: OfficeVerdict,
+  napping = false
+): SpriteData {
+  if (napping) {
+    return NAPPING_BUBBLE
+  }
   if (verdict === 'failed') {
     return FAILED_BUBBLE
   }

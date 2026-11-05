@@ -20,10 +20,12 @@ export type AgentStance = {
   atDesk: boolean
   /** Carries a mug from the coffee counter. */
   mug: boolean
+  /** Has idled so long it dozes. */
+  napping: boolean
 }
 
 export function seatedStance({ seat }: DeskAgent): AgentStance {
-  return { feet: seat.feet, walking: null, lift: 0, atDesk: true, mug: false }
+  return { feet: seat.feet, walking: null, lift: 0, atDesk: true, mug: false, napping: false }
 }
 
 const BOB_MS = 450
@@ -73,7 +75,7 @@ export function deskAgentDrawables(
   let holdMs = Number.POSITIVE_INFINITY
   deskAgents.forEach((desk, i) => {
     const { agent, sprite } = desk
-    const { feet, walking, lift, atDesk, mug } = stanceOf(desk)
+    const { feet, walking, lift, atDesk, mug, napping } = stanceOf(desk)
     const { strip, moving } = stripFor(agent, sprite, walking)
     const shown = moving ? frameAt(strip, now + i * STAGGER_MS) : null
     if (shown) {
@@ -91,7 +93,7 @@ export function deskAgentDrawables(
       bob = Math.floor(now / BOB_MS) % 2
       holdMs = Math.min(holdMs, BOB_MS - (now % BOB_MS))
     }
-    const bubble = getCachedSprite(bubbleFor(agent.bucket, agent.verdict), zoom)
+    const bubble = getCachedSprite(bubbleFor(agent.bucket, agent.verdict, napping), zoom)
     const x = offsetX + (raised.x - BUBBLE_HALF_WIDTH) * zoom
     const y = offsetY + (raised.y - FIGURE_HEIGHT - BUBBLE_HEIGHT - bob) * zoom
     drawables.push({ zY: BUBBLE_Z, draw: (c) => c.drawImage(bubble, x, y) })
