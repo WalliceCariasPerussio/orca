@@ -24,11 +24,16 @@ export type OfficeAgent = {
   startedAt: number
   /** When it entered its current state; 0 when unknown. */
   since: number
+  /** Set when its finished turn failed or was stopped, so it neither shows ✓ nor cheers. */
+  verdict?: OfficeVerdict
   /** The agent at a desk that spawned this one; it then stands by that desk instead of its own. */
   parentKey?: string
   /** Running sub-agents without a terminal, standing by this agent's desk. */
   subagents: OfficeSubagent[]
 }
+
+/** How a finished turn ended when it did not end well. */
+export type OfficeVerdict = 'failed' | 'interrupted'
 
 export type FloorTally = Record<DashboardBucket, number>
 
@@ -45,6 +50,13 @@ function subagentBucket(dotState: DashboardCardDotState): DashboardBucket | null
     case 'idle':
       return null
   }
+}
+
+function endedBadly(card: DashboardCard): OfficeVerdict | undefined {
+  if (card.bucket !== 'done') {
+    return undefined
+  }
+  return card.verdict === 'failed' || card.verdict === 'interrupted' ? card.verdict : undefined
 }
 
 // Why: a worker spawned by a worker stands with the agent at the desk, up the chain.
@@ -94,6 +106,7 @@ export function officeAgentsFrom(
           worktreeName: card.worktreeName,
           startedAt: card.startedAt,
           since: card.stateChangedAt,
+          verdict: endedBadly(card),
           parentKey,
           subagents
         }

@@ -76,6 +76,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         a.worktreeId,
         a.worktreeName,
         a.since,
+        a.verdict ?? '',
         a.parentKey ?? '',
         ...a.subagents.map((s) => `${s.key}=${s.bucket}=${s.name}`)
       ].join(':')

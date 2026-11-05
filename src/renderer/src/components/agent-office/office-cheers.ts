@@ -28,7 +28,8 @@ export class Cheers {
     const next = new Map<string, DashboardBucket>()
     for (const agent of agents) {
       const before = this.buckets.get(agent.key)
-      if (agent.bucket === 'done' && (before === 'working' || before === 'attention')) {
+      const finished = agent.bucket === 'done' && !agent.verdict
+      if (finished && (before === 'working' || before === 'attention')) {
         this.started.set(agent.key, now)
       }
       next.set(agent.key, agent.bucket)

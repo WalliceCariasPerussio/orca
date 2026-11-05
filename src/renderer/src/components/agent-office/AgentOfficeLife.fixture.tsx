@@ -1,6 +1,6 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import OfficeHoverTip from './OfficeHoverTip'
-import { fakeAgents, StaffedFloor, stagedRepos, waitFor } from './office-staged-floor'
+import { agentsWith, fakeAgents, StaffedFloor, stagedRepos, waitFor } from './office-staged-floor'
 
 const TURN_MS = 6000
 const NOW = Date.now()
@@ -40,4 +40,25 @@ export const hoverTip = defineFixture({
       />
     </div>
   )
+})
+
+export const endedBadly = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => (
+    <StaffedFloor
+      agents={agentsWith({ 'pane-0': 'working', 'pane-4': 'working' })}
+      then={agentsWith({ 'pane-0': 'done', 'pane-4': 'done' }).map((agent) =>
+        agent.key === 'pane-0'
+          ? { ...agent, verdict: 'failed' as const }
+          : agent.key === 'pane-4'
+            ? { ...agent, verdict: 'interrupted' as const }
+            : agent
+      )}
+    />
+  ),
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 400))
+  }
 })

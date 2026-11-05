@@ -1,6 +1,7 @@
 import { translate } from '@/i18n/i18n'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
 import type { DashboardBucket } from '../../../../shared/dashboard-snapshot'
+import type { OfficeVerdict } from './office-agents'
 import type { OfficeHover } from './office-building-setup'
 
 function bucketLabel(bucket: DashboardBucket): string {
@@ -16,6 +17,16 @@ function bucketLabel(bucket: DashboardBucket): string {
   }
 }
 
+function stateLabel(bucket: DashboardBucket, verdict: OfficeVerdict | undefined): string {
+  if (verdict === 'failed') {
+    return translate('auto.components.AgentStateDot.failed', 'Failed')
+  }
+  if (verdict === 'interrupted') {
+    return translate('auto.components.AgentStateDot.interrupted', 'Interrupted')
+  }
+  return bucketLabel(bucket)
+}
+
 /** Same label in the same place: keeps the tip still as the pointer moves, but not after a resize or a new state. */
 export function hoverKey(hover: OfficeHover | null | undefined): string | null {
   if (!hover) {
@@ -23,7 +34,7 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
   }
   const place = `${hover.left},${hover.top}`
   return hover.kind === 'agent'
-    ? `agent:${hover.agent.key}:${hover.agent.bucket}:${hover.agent.name}:${hover.agent.worktreeName}:${place}`
+    ? `agent:${hover.agent.key}:${hover.agent.bucket}:${hover.agent.verdict ?? ''}:${hover.agent.name}:${hover.agent.worktreeName}:${place}`
     : `spot:${hover.spot}:${place}`
 }
 
@@ -50,7 +61,7 @@ export default function OfficeHoverTip({
             })}
           </p>
           <p className="text-muted-foreground">
-            {bucketLabel(hover.agent.bucket)}
+            {stateLabel(hover.agent.bucket, hover.agent.verdict)}
             {hover.agent.since > 0
               ? ` · ${formatUiRelativeTime(hover.agent.since - hover.seenAt)}`
               : ''}{' '}

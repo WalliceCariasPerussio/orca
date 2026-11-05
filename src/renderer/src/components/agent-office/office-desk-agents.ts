@@ -84,7 +84,7 @@ export function deskAgentDrawables(
       bob = Math.floor(now / BOB_MS) % 2
       holdMs = Math.min(holdMs, BOB_MS - (now % BOB_MS))
     }
-    const bubble = getCachedSprite(bubbleFor(agent.bucket), zoom)
+    const bubble = getCachedSprite(bubbleFor(agent.bucket, agent.verdict), zoom)
     const x = offsetX + (raised.x - BUBBLE_HALF_WIDTH) * zoom
     const y = offsetY + (raised.y - FIGURE_HEIGHT - BUBBLE_HEIGHT - bob) * zoom
     drawables.push({ zY: BUBBLE_Z, draw: (c) => c.drawImage(bubble, x, y) })

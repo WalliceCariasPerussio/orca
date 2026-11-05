@@ -1,4 +1,5 @@
 import type { DashboardBucket } from '../../../../shared/dashboard-snapshot'
+import type { OfficeVerdict } from './office-agents'
 import {
   BUBBLE_PERMISSION_SPRITE,
   BUBBLE_WAITING_SPRITE
@@ -9,6 +10,7 @@ export const BUBBLE_FILL = '#EEEEFF'
 export const BUBBLE_OUTLINE = BUBBLE_WAITING_SPRITE[0][1]
 const NEEDS_YOU = '#D9483B'
 const RESTING = '#8A93A3'
+const FAILED = '#C2410C'
 
 // Why: pixel-agents' waiting bubble is the frame; the glyph inside tells the state at a glance.
 function withGlyph(color: string, pixels: [number, number][]): SpriteData {
@@ -42,8 +44,38 @@ const RESTING_BUBBLE = withGlyph(RESTING, [
   [6, 6]
 ])
 
-/** Sprite shown over an agent's head, or none while it simply works. */
-export function bubbleFor(bucket: DashboardBucket): SpriteData {
+const FAILED_BUBBLE = withGlyph(FAILED, [
+  [3, 2],
+  [7, 2],
+  [4, 3],
+  [6, 3],
+  [5, 4],
+  [4, 5],
+  [6, 5],
+  [3, 6],
+  [7, 6]
+])
+
+const STOPPED_BUBBLE = withGlyph(RESTING, [
+  [4, 3],
+  [5, 3],
+  [6, 3],
+  [4, 4],
+  [5, 4],
+  [6, 4],
+  [4, 5],
+  [5, 5],
+  [6, 5]
+])
+
+/** Sprite shown over an agent's head; a turn that failed or was stopped shows that instead of ✓. */
+export function bubbleFor(bucket: DashboardBucket, verdict?: OfficeVerdict): SpriteData {
+  if (verdict === 'failed') {
+    return FAILED_BUBBLE
+  }
+  if (verdict === 'interrupted') {
+    return STOPPED_BUBBLE
+  }
   switch (bucket) {
     case 'attention':
       return NEEDS_YOU_BUBBLE
