@@ -1,14 +1,25 @@
+import type { OfficeAgent } from './office-agents'
 import { drawBuildingFrame } from './office-building-frame'
-import { ELEVATOR_CAR_SPOT, isElevatorTile } from './office-elevator'
-import { planRide } from './office-elevator-ride'
-import { floorIndicator, layoutForFloor, rememberFloorId, type OfficeFloor } from './office-floors'
+import {
+  deskAgentAt,
+  deskAgentDrawables,
+  seatAgents,
+  seatTileKeys,
+  type DeskAgent
+} from './office-desk-agents'
+import { isElevatorTile } from './office-elevator'
+import { ElevatorTrip } from './office-elevator-trip'
+import { FIGURE_HEIGHT } from './office-figures'
+import { layoutForFloor, rememberFloorId, type OfficeFloor } from './office-floors'
 import { FrameLoop, type FrameResult } from './office-frame-loop'
 import { frameAt, type PetSprite } from './office-pet-sprite'
 import { ELEVATOR_FRONT_TILE } from './office-room-grid'
 import {
   buildOfficeScene,
+  cssAtWorld,
   projectScene,
   tileAtCss,
+  worldAtCss,
   type OfficeProjection,
   type OfficeScene
 } from './office-scene'
@@ -16,18 +27,18 @@ import {
   createWalker,
   isWalking,
   stepWalker,
-  tileFeet,
   type TilePoint,
-  type Walker
+  type Walker,
+  type WorldPoint
 } from './office-walker'
 import {
+  RECEPTION_COUNTER_FRONT_TILE,
   RECEPTION_ENTRANCE_TILE,
   RECEPTIONIST_BLOCKED,
   RECEPTIONIST_FEET
 } from './reception-layout'
 import { findPath, isWalkable } from './vendor/pixel-agents/webview-ui/src/office/layout/tileMap'
 
-type Phase = 'free' | 'boarding' | 'aboard' | 'closing' | 'riding' | 'arriving' | 'leaving'
 type Animation = 'idle' | 'walkLeft' | 'walkRight'
 
 export type OfficeBuildingSetup = {
@@ -37,35 +48,37 @@ export type OfficeBuildingSetup = {
   startAtEntrance: boolean
   avatar: PetSprite
   receptionist: PetSprite | null
+  /** Pets the agents wear, by bundled pet id. */
+  staffSprites: ReadonlyMap<string, PetSprite>
   lobbySign: string
   lobbyShort: string
   onPanelChange: (open: boolean) => void
   onFloorChange: (floor: OfficeFloor) => void
+  onAgentClick: (agent: OfficeAgent) => void
+  onReceptionistClick: () => void
 }
 
-const DOOR_SPEED = 2.4
-const ARRIVAL_PAUSE_MS = 250
+export type AgentHover = { agent: OfficeAgent; left: number; top: number }
 
-function sceneFor(floor: OfficeFloor): OfficeScene {
-  return buildOfficeScene(layoutForFloor(floor), floor.number === 0 ? RECEPTIONIST_BLOCKED : [])
+const HIT_HALF_WIDTH = 9
+
+function isNear(world: WorldPoint, feet: WorldPoint): boolean {
+  const dy = feet.y - world.y
+  return Math.abs(world.x - feet.x) <= HIT_HALF_WIDTH && dy >= -2 && dy <= FIGURE_HEIGHT
 }
 
-/** The office you walk through: one floor on screen, the elevator, and you. */
+/** The office you walk through: one floor on screen, its agents, the elevator, and you. */
 export class OfficeBuilding {
   private floors: OfficeFloor[]
   private floor: OfficeFloor
   private scene: OfficeScene
   private readonly walker: Walker
   private avatar: PetSprite
-  private phase: Phase = 'free'
-  private boardWhenArrived = false
-  private called = false
-  private doorOpen = 0
-  private doorTarget = 0
-  private indicator: string
-  private ride: { stops: string[]; index: number; stepMs: number; nextAt: number } | null = null
-  private destination: OfficeFloor | null = null
-  private arriveAt = 0
+  private readonly trip: ElevatorTrip
+  private agents: OfficeAgent[] = []
+  private staff: DeskAgent[] = []
+  private staffSprites: ReadonlyMap<string, PetSprite>
+
   private animation: Animation = 'idle'
   private animationStart = 0
   private canvas: HTMLCanvasElement | null = null
@@ -77,11 +90,19 @@ export class OfficeBuilding {
   constructor(private readonly setup: OfficeBuildingSetup) {
     this.floors = setup.floors
     this.floor = setup.floors.find((f) => f.id === setup.floorId) ?? setup.floors[0]
-    this.scene = sceneFor(this.floor)
+    this.staffSprites = setup.staffSprites
+    this.scene = this.sceneFor(this.floor)
     this.avatar = setup.avatar
     const entering = setup.startAtEntrance && this.floor.number === 0
     this.walker = createWalker(entering ? RECEPTION_ENTRANCE_TILE : ELEVATOR_FRONT_TILE)
-    this.indicator = floorIndicator(this.floor, setup.lobbyShort)
+    this.trip = new ElevatorTrip(
+      {
+        lobbyShort: setup.lobbyShort,
+        onPanelChange: setup.onPanelChange,
+        onArrive: (floor) => this.enterFloor(floor)
+      },
+      this.floor
+    )
   }
 
   attach(canvas: HTMLCanvasElement, cssWidth: number, cssHeight: number, ratio: number): void {
@@ -101,9 +122,7 @@ export class OfficeBuilding {
     const current = floors.find((f) => f.id === this.floor.id)
     if (current) {
       this.floor = current
-      if (this.phase === 'free') {
-        this.indicator = floorIndicator(current, this.setup.lobbyShort)
-      }
+      this.trip.showFloor(current)
     }
     this.loop.invalidate()
   }
@@ -113,8 +132,32 @@ export class OfficeBuilding {
     this.loop.invalidate()
   }
 
+  /** Every agent in the building; each sits on its project's floor. */
+  setAgents(agents: OfficeAgent[]): void {
+    this.agents = agents
+    this.seatStaff()
+    this.loop.invalidate()
+  }
+
+  setStaffSprites(sprites: ReadonlyMap<string, PetSprite>): void {
+    this.staffSprites = sprites
+    this.seatStaff()
+    this.loop.invalidate()
+  }
+
   pointer(cssX: number, cssY: number): void {
     if (!this.projection) {
+      return
+    }
+    const world = worldAtCss(this.projection, cssX, cssY)
+    const clicked = deskAgentAt(this.staff, world)
+    if (clicked) {
+      this.setup.onAgentClick(clicked.agent)
+      return
+    }
+    if (this.floor.number === 0 && isNear(world, RECEPTIONIST_FEET)) {
+      this.walkAlong(this.pathTo(RECEPTION_COUNTER_FRONT_TILE))
+      this.setup.onReceptionistClick()
       return
     }
     const tile = tileAtCss(this.projection, cssX, cssY)
@@ -125,8 +168,32 @@ export class OfficeBuilding {
     }
   }
 
+  /** The agent under a point and where to show its name, in CSS pixels. */
+  hover(cssX: number, cssY: number): AgentHover | null {
+    if (!this.projection) {
+      return null
+    }
+    const found = deskAgentAt(this.staff, worldAtCss(this.projection, cssX, cssY))
+    if (!found) {
+      return null
+    }
+    const { feet } = found.seat
+    return {
+      agent: found.agent,
+      ...cssAtWorld(this.projection, feet.x, feet.y - FIGURE_HEIGHT - 14)
+    }
+  }
+
+  /** CSS point in front of the reception counter, where its menu opens. */
+  receptionistAnchor(): { left: number; top: number } | null {
+    if (!this.projection || this.floor.number !== 0) {
+      return null
+    }
+    return cssAtWorld(this.projection, RECEPTIONIST_FEET.x, RECEPTIONIST_FEET.y + 16)
+  }
+
   step(deltaCol: number, deltaRow: number): void {
-    if (this.phase !== 'free' || this.walker.path.length > 1) {
+    if (!this.trip.free || this.walker.path.length > 1) {
       return
     }
     const from = this.walker.path.at(-1) ?? { col: this.walker.col, row: this.walker.row }
@@ -139,42 +206,57 @@ export class OfficeBuilding {
   }
 
   callElevator(): void {
-    if (this.phase !== 'free') {
+    if (!this.trip.free) {
       return
     }
     const front = ELEVATOR_FRONT_TILE
     if (this.walker.col === front.col && this.walker.row === front.row && !isWalking(this.walker)) {
-      this.board()
-      return
-    }
-    const path = this.pathTo(front)
-    if (path.length > 0) {
-      this.walkAlong(path)
-      this.boardWhenArrived = true
-      this.called = true
-    }
-  }
-
-  /** Ride to a floor from inside the car; picking the current floor just steps back out. */
-  choose(floorId: string): void {
-    if (this.phase !== 'aboard') {
-      return
-    }
-    this.setup.onPanelChange(false)
-    const destination = this.floors.find((f) => f.id === floorId)
-    if (destination && destination.id !== this.floor.id) {
-      this.destination = destination
-      this.phase = 'closing'
-      this.doorTarget = 0
+      this.trip.board()
     } else {
-      this.phase = 'arriving'
-      this.arriveAt = 0
+      const path = this.pathTo(front)
+      if (path.length === 0) {
+        return
+      }
+      this.walkAlong(path)
+      this.trip.boardOnArrival()
     }
     this.loop.invalidate()
   }
 
+  /** Ride to a floor from inside the car; picking the current floor just steps back out. */
+  choose(floorId: string): void {
+    if (this.trip.choose(this.floors, this.floor, floorId)) {
+      this.loop.invalidate()
+    }
+  }
+
   dispose(): void {
     this.loop.dispose()
+  }
+
+  private sceneFor(floor: OfficeFloor): OfficeScene {
+    if (floor.number === 0) {
+      return buildOfficeScene(layoutForFloor(floor, 0), RECEPTIONIST_BLOCKED)
+    }
+    const onFloor = this.agents.filter((agent) => agent.floorId === floor.id)
+    this.staff = seatAgents(onFloor, this.staffSprites)
+    return buildOfficeScene(layoutForFloor(floor, onFloor.length), seatTileKeys(this.staff))
+  }
+
+  private seatStaff(): void {
+    this.staff = []
+    this.scene = this.sceneFor(this.floor)
+    if (this.projection) {
+      const ratio = this.projection.devicePixelRatio
+      this.projection = projectScene(this.scene, this.widthPx, this.heightPx, ratio)
+    }
+  }
+
+  private enterFloor(floor: OfficeFloor): void {
+    this.floor = floor
+    this.seatStaff()
+    rememberFloorId(floor.id)
+    this.setup.onFloorChange(floor)
   }
 
   private pathTo(tile: TilePoint): TilePoint[] {
@@ -183,91 +265,19 @@ export class OfficeBuilding {
   }
 
   private walkAlong(path: TilePoint[]): void {
-    if (this.phase !== 'free' || path.length === 0) {
+    if (!this.trip.free || path.length === 0) {
       return
     }
     this.walker.path = path
-    this.boardWhenArrived = false
-    this.called = false
+    this.trip.cancelBoarding()
     this.loop.invalidate()
-  }
-
-  private board(): void {
-    this.phase = 'boarding'
-    this.called = true
-    this.doorTarget = 1
-    this.loop.invalidate()
-  }
-
-  private arrive(now: number): void {
-    const target = this.destination
-    this.ride = null
-    this.destination = null
-    if (target) {
-      this.floor = target
-      this.scene = sceneFor(target)
-      const ratio = this.projection?.devicePixelRatio ?? 1
-      this.projection = projectScene(this.scene, this.widthPx, this.heightPx, ratio)
-      rememberFloorId(target.id)
-      this.setup.onFloorChange(target)
-    }
-    this.indicator = floorIndicator(this.floor, this.setup.lobbyShort)
-    this.phase = 'arriving'
-    this.arriveAt = now + ARRIVAL_PAUSE_MS
-  }
-
-  private advanceElevator(now: number, walking: boolean): void {
-    if (this.phase === 'free' && this.boardWhenArrived && !walking) {
-      this.boardWhenArrived = false
-      this.board()
-    } else if (this.phase === 'boarding' && this.doorOpen === 1 && !walking) {
-      if (this.walker.y === ELEVATOR_CAR_SPOT.y) {
-        this.phase = 'aboard'
-        this.called = false
-        this.setup.onPanelChange(true)
-      } else {
-        this.walker.glide = { ...ELEVATOR_CAR_SPOT }
-      }
-    } else if (this.phase === 'closing' && this.doorOpen === 0 && this.destination) {
-      const ride = planRide(this.floors, this.floor, this.destination, this.setup.lobbyShort)
-      this.ride = { ...ride, index: 0, nextAt: now }
-      this.phase = 'riding'
-    } else if (this.phase === 'riding' && this.ride && now >= this.ride.nextAt) {
-      if (this.ride.index < this.ride.stops.length) {
-        this.indicator = this.ride.stops[this.ride.index++]
-        this.ride.nextAt = now + this.ride.stepMs
-      } else {
-        this.arrive(now)
-      }
-    } else if (this.phase === 'arriving' && now >= this.arriveAt) {
-      this.doorTarget = 1
-      if (this.doorOpen === 1 && !walking) {
-        this.walker.glide = tileFeet(ELEVATOR_FRONT_TILE)
-        this.walker.col = ELEVATOR_FRONT_TILE.col
-        this.walker.row = ELEVATOR_FRONT_TILE.row
-        this.phase = 'leaving'
-      }
-    } else if (this.phase === 'leaving' && !walking) {
-      this.doorTarget = 0
-      this.phase = 'free'
-    }
   }
 
   private tick(dt: number, now: number): FrameResult {
-    const doorStep = DOOR_SPEED * dt
-    this.doorOpen =
-      this.doorOpen < this.doorTarget
-        ? Math.min(this.doorTarget, this.doorOpen + doorStep)
-        : Math.max(this.doorTarget, this.doorOpen - doorStep)
     stepWalker(this.walker, dt)
-    this.advanceElevator(now, isWalking(this.walker))
+    this.trip.tick(dt, now, this.walker, this.floors, this.floor)
     const holdMs = this.draw(now)
-    const animating =
-      isWalking(this.walker) ||
-      this.doorOpen !== this.doorTarget ||
-      this.boardWhenArrived ||
-      (this.phase !== 'free' && this.phase !== 'aboard')
-    return { animating, holdMs }
+    return { animating: isWalking(this.walker) || this.trip.animating, holdMs }
   }
 
   private draw(now: number): number {
@@ -282,25 +292,25 @@ export class OfficeBuilding {
       this.animationStart = now
     }
     const you = frameAt(this.avatar[animation], now - this.animationStart)
-    const atDesk =
-      this.setup.receptionist && this.floor.number === 0
-        ? frameAt(this.setup.receptionist.idle, now)
-        : null
+    const receptionist = this.floor.number === 0 ? this.setup.receptionist : null
+    const atDesk = receptionist ? frameAt(receptionist.idle, now) : null
+    const staff = deskAgentDrawables(this.staff, now, this.projection)
     drawBuildingFrame(context, {
       scene: this.scene,
       projection: this.projection,
       widthPx: this.widthPx,
       heightPx: this.heightPx,
       sign: this.floor.number === 0 ? this.setup.lobbySign.toUpperCase() : this.floor.name,
-      doorOpen: this.doorOpen,
-      indicator: this.indicator,
-      called: this.called,
+      doorOpen: this.trip.doorOpen,
+      indicator: this.trip.indicator,
+      called: this.trip.called,
       you: { sprite: this.avatar, frame: you.frame, feet: this.walker },
       receptionist:
-        atDesk && this.setup.receptionist
-          ? { sprite: this.setup.receptionist, frame: atDesk.frame, feet: RECEPTIONIST_FEET }
-          : null
+        receptionist && atDesk
+          ? { sprite: receptionist, frame: atDesk.frame, feet: RECEPTIONIST_FEET }
+          : null,
+      staff: staff.drawables
     })
-    return Math.min(you.nextInMs, atDesk?.nextInMs ?? Number.POSITIVE_INFINITY)
+    return Math.min(you.nextInMs, atDesk?.nextInMs ?? Number.POSITIVE_INFINITY, staff.holdMs)
   }
 }

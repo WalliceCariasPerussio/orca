@@ -29,10 +29,10 @@ export function buildFloors(
   ]
 }
 
-export function layoutForFloor(floor: OfficeFloor): OfficeLayout {
+export function layoutForFloor(floor: OfficeFloor, agentCount: number): OfficeLayout {
   return floor.number === 0
     ? createReceptionLayout()
-    : createProjectFloorLayout(floor.id, floor.badgeColor)
+    : createProjectFloorLayout(floor.id, floor.badgeColor, agentCount)
 }
 
 export function floorIndicator(floor: OfficeFloor, lobbyShort: string): string {

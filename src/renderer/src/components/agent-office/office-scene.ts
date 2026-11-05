@@ -155,15 +155,38 @@ export function drawWallSign(
   context.letterSpacing = '0px'
 }
 
+/** World pixel under a point given in CSS pixels relative to the canvas. */
+export function worldAtCss(
+  projection: OfficeProjection,
+  cssX: number,
+  cssY: number
+): { x: number; y: number } {
+  const { offsetX, offsetY, zoom, devicePixelRatio } = projection
+  return {
+    x: (cssX * devicePixelRatio - offsetX) / zoom,
+    y: (cssY * devicePixelRatio - offsetY) / zoom
+  }
+}
+
+/** CSS pixels, relative to the canvas, of a world point. */
+export function cssAtWorld(
+  projection: OfficeProjection,
+  worldX: number,
+  worldY: number
+): { left: number; top: number } {
+  const { offsetX, offsetY, zoom, devicePixelRatio } = projection
+  return {
+    left: (offsetX + worldX * zoom) / devicePixelRatio,
+    top: (offsetY + worldY * zoom) / devicePixelRatio
+  }
+}
+
 /** World tile under a point given in CSS pixels relative to the canvas. */
 export function tileAtCss(
   projection: OfficeProjection,
   cssX: number,
   cssY: number
 ): { col: number; row: number } {
-  const { offsetX, offsetY, zoom, devicePixelRatio } = projection
-  return {
-    col: Math.floor((cssX * devicePixelRatio - offsetX) / (zoom * TILE_SIZE)),
-    row: Math.floor((cssY * devicePixelRatio - offsetY) / (zoom * TILE_SIZE))
-  }
+  const world = worldAtCss(projection, cssX, cssY)
+  return { col: Math.floor(world.x / TILE_SIZE), row: Math.floor(world.y / TILE_SIZE) }
 }

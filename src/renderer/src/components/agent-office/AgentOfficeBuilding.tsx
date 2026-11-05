@@ -1,20 +1,19 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import type { CustomPet } from '../../../../shared/pet-types'
+import type { DashboardBucket } from '../../../../shared/dashboard-snapshot'
 import { Button } from '../ui/button'
-import { BUNDLED_PETS } from '../pet/pet-models'
-import { usePetUrl } from '../pet/usePetUrl'
+import { revealDashboardAgent } from '../dashboard/reveal-dashboard-agent'
+import { useLiveDashboardSnapshot } from '../dashboard/useLiveDashboardSnapshot'
 import ElevatorPanel from './ElevatorPanel'
-import { loadOfficeAssets } from './office-asset-loading'
-import { OfficeBuilding } from './office-building'
-import { loadElevatorSprite } from './office-elevator'
+import PetShopPanel from './PetShopPanel'
+import ReceptionDesk from './ReceptionDesk'
+import StaffPetsPanel from './StaffPetsPanel'
+import { officeAgentsFrom, tallyByFloor, type OfficeAgent } from './office-agents'
+import { OfficeBuilding, type AgentHover } from './office-building'
 import { buildFloors, LOBBY_FLOOR_ID, readRememberedFloorId } from './office-floors'
-import { loadPetSprite, type PetSprite } from './office-pet-sprite'
-
-type Cast = { avatar: PetSprite; receptionist: PetSprite | null }
-
-const PET_WAIT_MS = 1500
+import { useStaffPets } from './office-staff-pets'
+import { useOfficeCast } from './use-office-cast'
 
 const STEP_KEYS: Record<string, [number, number]> = {
   ArrowUp: [0, -1],
@@ -25,6 +24,25 @@ const STEP_KEYS: Record<string, [number, number]> = {
   s: [0, 1],
   a: [-1, 0],
   d: [1, 0]
+}
+
+function bucketLabel(bucket: DashboardBucket): string {
+  switch (bucket) {
+    case 'attention':
+      return translate('dashboardPopout.bucket.attention', 'Needs You')
+    case 'working':
+      return translate('dashboardPopout.bucket.working', 'Working')
+    case 'done':
+      return translate('dashboardPopout.bucket.done', 'Done')
+    case 'idle':
+      return translate('dashboardPopout.bucket.idle', 'Idle')
+  }
+}
+
+function openAgentTerminal(agent: OfficeAgent): void {
+  if (revealDashboardAgent(agent.reveal) && useAppStore.getState().activeView === 'office') {
+    useAppStore.getState().closeAgentOfficePage()
+  }
 }
 
 export default function AgentOfficeBuilding(): React.JSX.Element {
@@ -38,79 +56,42 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const [remembered] = useState(readRememberedFloorId)
   const [floorId, setFloorId] = useState(remembered ?? LOBBY_FLOOR_ID)
   const [panelOpen, setPanelOpen] = useState(false)
-  const [cast, setCast] = useState<Cast | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [deskAnchor, setDeskAnchor] = useState<{ left: number; top: number } | null>(null)
+  const [hovered, setHovered] = useState<AgentHover | null>(null)
+  const [windowOpen, setWindowOpen] = useState<'staff' | 'shop' | null>(null)
+  const [staffPets, assignStaffPet] = useStaffPets()
+  const { cast, failed } = useOfficeCast(Object.values(staffPets))
 
-  const pet = usePetUrl()
-  // Why: usePetUrl rebuilds the grid object each render; its contents are what should reload frames.
-  const gridKey = pet.sprite ? JSON.stringify(pet.sprite) : ''
-  const grid = useMemo(
-    () => (gridKey ? (JSON.parse(gridKey) as NonNullable<CustomPet['sprite']>) : null),
-    [gridKey]
-  )
-  const petId = useAppStore((s) => s.petId)
-  const receptionistUrl = (BUNDLED_PETS.find((p) => p.id !== petId) ?? BUNDLED_PETS[0]).url
-  // Why: a custom pet whose file is missing never turns ready; open with the bundled stand-in meanwhile.
-  const [petWaitOver, setPetWaitOver] = useState(false)
-  useEffect(() => {
-    if (pet.ready) {
-      return
-    }
-    const timer = window.setTimeout(() => setPetWaitOver(true), PET_WAIT_MS)
-    return () => window.clearTimeout(timer)
-  }, [pet.ready])
-  const petUsable = pet.ready || petWaitOver
+  const snapshot = useLiveDashboardSnapshot()
+  const freshAgents = officeAgentsFrom(snapshot.cards, staffPets)
+  // Why: the snapshot rebuilds on every status tick; reseat the floor only when what it shows changes.
+  const agentsKey = freshAgents
+    .map((a) => `${a.key}:${a.floorId}:${a.bucket}:${a.petId}:${a.name}`)
+    .join('|')
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the visible fields above
+  const agents = useMemo(() => freshAgents, [agentsKey])
+  const tallies = useMemo(() => tallyByFloor(agents), [agents])
 
-  const latest = useRef({ floors, floorId, remembered, lobbyName, lobbyShort })
+  const latest = useRef({ floors, floorId, remembered, lobbyName, lobbyShort, agents, cast })
   useLayoutEffect(() => {
-    latest.current = { floors, floorId, remembered, lobbyName, lobbyShort }
+    latest.current = { floors, floorId, remembered, lobbyName, lobbyShort, agents, cast }
   })
 
-  useEffect(() => {
-    if (!petUsable) {
-      return
-    }
-    let cancelled = false
-    void Promise.all([
-      loadOfficeAssets(),
-      loadElevatorSprite(),
-      loadPetSprite(pet.url, grid),
-      loadPetSprite(receptionistUrl, null).catch(() => null)
-    ]).then(
-      ([, , avatar, receptionist]) => {
-        if (cancelled) {
-          return
-        }
-        if (buildingRef.current) {
-          buildingRef.current.setAvatar(avatar)
-        } else {
-          setCast({ avatar, receptionist })
-        }
-      },
-      () => {
-        if (!cancelled) {
-          setFailed(true)
-        }
-      }
-    )
-    return () => {
-      cancelled = true
-    }
-  }, [petUsable, pet.url, grid, receptionistUrl])
-
+  const castReady = cast !== null
   useEffect(() => {
     const canvas = canvasRef.current
     const container = containerRef.current
-    if (!cast || !canvas || !container) {
+    const setup = latest.current
+    if (!setup.cast || !canvas || !container) {
       return
     }
-    const setup = latest.current
     const building = new OfficeBuilding({
       floors: setup.floors,
       floorId: setup.floorId,
       startAtEntrance: setup.remembered === null,
-      avatar: cast.avatar,
-      receptionist: cast.receptionist,
+      avatar: setup.cast.avatar,
+      receptionist: setup.cast.receptionist,
+      staffSprites: setup.cast.staff,
       lobbySign: setup.lobbyName,
       lobbyShort: setup.lobbyShort,
       onPanelChange: (open) => {
@@ -119,12 +100,16 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           canvas.focus({ preventScroll: true })
         }
       },
-      onFloorChange: (floor) => setFloorId(floor.id)
+      onFloorChange: (floor) => setFloorId(floor.id),
+      onAgentClick: openAgentTerminal,
+      onReceptionistClick: () => setDeskAnchor(buildingRef.current?.receptionistAnchor() ?? null)
     })
+    building.setAgents(setup.agents)
     buildingRef.current = building
     const measure = (): void => {
       const box = container.getBoundingClientRect()
       building.attach(canvas, box.width, box.height, window.devicePixelRatio || 1)
+      setDeskAnchor(null)
     }
     measure()
     const observer = new ResizeObserver(measure)
@@ -136,11 +121,22 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       building.dispose()
       buildingRef.current = null
     }
+  }, [castReady])
+
+  useEffect(() => {
+    if (cast) {
+      buildingRef.current?.setAvatar(cast.avatar)
+      buildingRef.current?.setStaffSprites(cast.staff)
+    }
   }, [cast])
 
   useEffect(() => {
     buildingRef.current?.setFloors(floors)
   }, [floors])
+
+  useEffect(() => {
+    buildingRef.current?.setAgents(agents)
+  }, [agents])
 
   const currentFloor = floors.find((f) => f.id === floorId) ?? floors[0]
   return (
@@ -156,8 +152,17 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         className="absolute inset-0 size-full cursor-pointer outline-none"
         onPointerDown={(event) => {
           const box = event.currentTarget.getBoundingClientRect()
+          setDeskAnchor(null)
           buildingRef.current?.pointer(event.clientX - box.left, event.clientY - box.top)
         }}
+        onPointerMove={(event) => {
+          const box = event.currentTarget.getBoundingClientRect()
+          const next = buildingRef.current?.hover(event.clientX - box.left, event.clientY - box.top)
+          setHovered((previous) =>
+            (previous?.agent.key ?? null) === (next?.agent.key ?? null) ? previous : (next ?? null)
+          )
+        }}
+        onPointerLeave={() => setHovered(null)}
         onKeyDown={(event) => {
           const step = STEP_KEYS[event.key]
           if (step) {
@@ -169,6 +174,21 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           }
         }}
       />
+      {hovered ? (
+        <div
+          className="pointer-events-none absolute z-10 max-w-64 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-floating"
+          style={{ left: hovered.left, top: hovered.top }}
+        >
+          <p className="truncate font-medium">{hovered.agent.name}</p>
+          <p className="text-muted-foreground">
+            {bucketLabel(hovered.agent.bucket)} ·{' '}
+            {translate(
+              'auto.components.agentOffice.building.openTerminal',
+              'click to open the terminal'
+            )}
+          </p>
+        </div>
+      ) : null}
       {cast ? (
         <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-end justify-between gap-3">
           <p className="text-xs text-muted-foreground">
@@ -198,11 +218,35 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
             : translate('auto.components.agentOffice.reception.loading', 'Opening the office…')}
         </p>
       )}
+      {deskAnchor ? (
+        <ReceptionDesk
+          anchor={deskAnchor}
+          onClose={() => setDeskAnchor(null)}
+          onOpenStaffPets={() => {
+            setDeskAnchor(null)
+            setWindowOpen('staff')
+          }}
+          onOpenShop={() => {
+            setDeskAnchor(null)
+            setWindowOpen('shop')
+          }}
+        />
+      ) : null}
+      {windowOpen === 'staff' ? (
+        <StaffPetsPanel
+          staffPets={staffPets}
+          onAssign={assignStaffPet}
+          onOpenShop={() => setWindowOpen('shop')}
+          onClose={() => setWindowOpen(null)}
+        />
+      ) : null}
+      {windowOpen === 'shop' ? <PetShopPanel onClose={() => setWindowOpen(null)} /> : null}
       {panelOpen ? (
         <ElevatorPanel
           floors={floors}
           currentFloorId={currentFloor.id}
           lobbyShort={lobbyShort}
+          tallies={tallies}
           onChoose={(id) => buildingRef.current?.choose(id)}
         />
       ) : null}

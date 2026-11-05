@@ -32,6 +32,8 @@ export type BuildingFrame = {
   called: boolean
   you: PlacedFigure
   receptionist: PlacedFigure | null
+  /** Agents at their desks and their bubbles, already placed. */
+  staff: DepthDrawable[]
 }
 
 export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: BuildingFrame): void {
@@ -55,7 +57,8 @@ export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: Buil
       zY: inCar ? ELEVATOR_Z.rider : you.feet.y,
       projection,
       clip: inCar ? (c) => clipToDoorway(c, view) : undefined
-    })
+    }),
+    ...frame.staff
   ]
   if (receptionist) {
     extras.push(figureDrawable({ ...receptionist, zY: receptionist.feet.y, projection }))

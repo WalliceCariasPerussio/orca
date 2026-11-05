@@ -37,7 +37,11 @@ export async function importPetBundle(
   } catch {
     throw new PetImportError('pathUnreadable')
   }
+  return importPetBundleFromDirectory(bundleDir)
+}
 
+/** Validate and copy an unpacked .codex-pet folder into the pets directory. */
+export async function importPetBundleFromDirectory(bundleDir: string): Promise<CustomPet> {
   const manifestPath = join(bundleDir, 'pet.json')
   let manifestStat: Awaited<ReturnType<typeof stat>>
   try {

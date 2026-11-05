@@ -19958,17 +19958,57 @@
         "reception": {
           "sign": "Recepção",
           "loading": "Abrindo o escritório…",
-          "loadFailed": "Não foi possível abrir o escritório."
+          "loadFailed": "Não foi possível abrir o escritório.",
+          "desk": {
+            "title": "Balcão da recepção",
+            "greeting": "Olá! Em que posso ajudar?",
+            "close": "Fechar",
+            "activity": "Ver a atividade dos agentes",
+            "activityClose": "Esconder a atividade dos agentes",
+            "activityCounts": "{{value0}} precisam de você · {{value1}} trabalhando",
+            "options": "Opções de exibição da lista",
+            "addProject": "Adicionar projeto",
+            "newWorkspace": "Novo workspace",
+            "staffPets": "Pets da equipe",
+            "shop": "Loja de pets"
+          }
+        },
+        "panel": {
+          "close": "Fechar"
+        },
+        "staff": {
+          "title": "Pets da equipe",
+          "description": "Cada tipo de agente aparece na mesa com o pet escolhido aqui. Fica salvo neste computador.",
+          "otherAgents": "Outros agentes",
+          "morePets": "Quer mais pets?",
+          "openShop": "Abrir a loja de pets"
+        },
+        "shop": {
+          "title": "Loja de pets",
+          "notice": "Pets da comunidade do codex-pets.net, instalados só neste computador. Muitos são fan art de personagens de terceiros: instale só os que você pode usar.",
+          "search": "Buscar pets",
+          "searchButton": "Buscar",
+          "unsupported": "Para instalar pets, feche e abra o app de desktop de novo.",
+          "listFailed": "Não foi possível acessar o codex-pets.net. Confira a conexão e tente de novo.",
+          "installFailed": "Não foi possível instalar este pet.",
+          "install": "Instalar",
+          "installing": "Instalando…",
+          "useAsMe": "Usar como meu pet",
+          "isYou": "Este é você",
+          "more": "Mostrar mais",
+          "loading": "Carregando pets…"
         },
         "building": {
           "label": "Escritório de Agentes. As setas andam, Enter chama o elevador.",
-          "hint": "Clique no chão para andar. Clique no elevador para trocar de andar."
+          "hint": "Clique no chão para andar. Clique no elevador para trocar de andar. Clique num agente para abrir o terminal dele.",
+          "openTerminal": "clique para abrir o terminal"
         },
         "elevator": {
           "title": "Elevador",
           "close": "Fechar o painel e sair do elevador",
           "call": "Chamar elevador",
-          "lobbyShort": "T"
+          "lobbyShort": "T",
+          "tally": "{{value0}} precisam de você, {{value1}} trabalhando, {{value2}} prontos"
         },
         "sidebar": {
           "label": "Escritório de Agentes"

@@ -17,8 +17,13 @@ export type PetSprite = {
   idle: PetFrame[]
   walkLeft: PetFrame[]
   walkRight: PetFrame[]
+  /** Sheet pets act out an agent's state; single-image pets only have `idle`. */
+  states?: Partial<Record<'working' | 'attention' | 'done', PetFrame[]>>
   figure: PetFigure
 }
+
+// Same pairing as the Orca pet: running while working, waiting for you, review when done.
+const STATE_STRIPS = { working: 'running', attention: 'waiting', done: 'review' } as const
 
 type SheetGrid = NonNullable<CustomPet['sprite']>
 
@@ -147,9 +152,16 @@ async function loadSheet(url: string, grid: SheetGrid): Promise<PetSprite> {
   const leftStrip = animations['running-left']
   const walkRight = rightStrip ? stripFrames(image, grid, rightStrip) : idle
   const walkLeft = leftStrip ? stripFrames(image, grid, leftStrip) : walkRight
+  const states: NonNullable<PetSprite['states']> = {}
+  for (const [state, stripName] of Object.entries(STATE_STRIPS)) {
+    const strip = animations[stripName]
+    if (strip && strip.row < grid.rows) {
+      states[state as keyof typeof STATE_STRIPS] = stripFrames(image, grid, strip)
+    }
+  }
   const firstIdle = idle[0]
   const figure = measureFigure(image, firstIdle.sx, firstIdle.sy, firstIdle.sw, firstIdle.sh)
-  return { idle, walkLeft, walkRight, figure }
+  return { idle, walkLeft, walkRight, states, figure }
 }
 
 /** Load once per pet image; the office reuses decoded frames across visits. */

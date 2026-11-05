@@ -14,6 +14,8 @@ export const RECEPTIONIST_FEET = {
   x: (RECEPTION_COUNTER.col + 4.5) * TILE_SIZE,
   y: RECEPTION_COUNTER.row * TILE_SIZE + 18
 }
+/** Where you stand to talk to the receptionist. */
+export const RECEPTION_COUNTER_FRONT_TILE = { col: 10, row: 7 }
 /** Tiles around the receptionist that you cannot walk into. */
 export const RECEPTIONIST_BLOCKED = ['9,4', '10,4', '11,4', '9,5', '10,5', '11,5']
 

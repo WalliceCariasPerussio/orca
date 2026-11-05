@@ -19357,17 +19357,57 @@
         "reception": {
           "sign": "Lobby",
           "loading": "Opening the office…",
-          "loadFailed": "The office could not open."
+          "loadFailed": "The office could not open.",
+          "desk": {
+            "title": "Reception desk",
+            "greeting": "Hi! How can I help?",
+            "close": "Close",
+            "activity": "See agent activity",
+            "activityClose": "Hide agent activity",
+            "activityCounts": "{{value0}} need you · {{value1}} working",
+            "options": "List display options",
+            "addProject": "Add project",
+            "newWorkspace": "New workspace",
+            "staffPets": "Team pets",
+            "shop": "Pet shop"
+          }
+        },
+        "panel": {
+          "close": "Close"
+        },
+        "staff": {
+          "title": "Team pets",
+          "description": "Each kind of agent shows up at its desk as the pet you pick here. Saved on this computer.",
+          "otherAgents": "Other agents",
+          "morePets": "Want more pets?",
+          "openShop": "Open the pet shop"
+        },
+        "shop": {
+          "title": "Pet shop",
+          "notice": "Community pets from codex-pets.net, installed on this computer only. Many are fan art of other people’s characters, so install only pets you are free to use.",
+          "search": "Search pets",
+          "searchButton": "Search",
+          "unsupported": "Installing pets needs the desktop app after a full restart.",
+          "listFailed": "Could not reach codex-pets.net. Check your connection and try again.",
+          "installFailed": "Could not install this pet.",
+          "install": "Install",
+          "installing": "Installing…",
+          "useAsMe": "Use as my pet",
+          "isYou": "This is you",
+          "more": "Show more",
+          "loading": "Loading pets…"
         },
         "building": {
           "label": "Agent Office. Arrow keys walk, Enter calls the elevator.",
-          "hint": "Click the floor to walk. Click the elevator to change floors."
+          "hint": "Click the floor to walk. Click the elevator to change floors. Click an agent to open its terminal.",
+          "openTerminal": "click to open the terminal"
         },
         "elevator": {
           "title": "Elevator",
           "close": "Close the panel and step out",
           "call": "Call elevator",
-          "lobbyShort": "L"
+          "lobbyShort": "L",
+          "tally": "{{value0}} need you, {{value1}} working, {{value2}} done"
         },
         "sidebar": {
           "label": "Agent Office"

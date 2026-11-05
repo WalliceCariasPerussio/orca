@@ -2,13 +2,49 @@ import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { translate } from '@/i18n/i18n'
+import type { FloorTally } from './office-agents'
 import { floorIndicator, type OfficeFloor } from './office-floors'
 
 type ElevatorPanelProps = {
   floors: OfficeFloor[]
   currentFloorId: string
   lobbyShort: string
+  tallies: ReadonlyMap<string, FloorTally>
   onChoose: (floorId: string) => void
+}
+
+function FloorTallyChips({ tally }: { tally: FloorTally | undefined }): React.JSX.Element | null {
+  if (!tally || tally.attention + tally.working + tally.done === 0) {
+    return null
+  }
+  const label = translate(
+    'auto.components.agentOffice.elevator.tally',
+    '{{value0}} need you, {{value1}} working, {{value2}} done',
+    { value0: tally.attention, value1: tally.working, value2: tally.done }
+  )
+  return (
+    <span className="ml-auto flex shrink-0 items-center gap-1.5 text-xs tabular-nums" title={label}>
+      <span className="sr-only">{label}</span>
+      {tally.attention > 0 ? (
+        <span aria-hidden className="flex items-center gap-0.5 font-semibold text-destructive">
+          <span className="size-1.5 rounded-full bg-destructive" />
+          {tally.attention}
+        </span>
+      ) : null}
+      {tally.working > 0 ? (
+        <span aria-hidden className="flex items-center gap-0.5 text-muted-foreground">
+          <span className="size-1.5 rounded-full bg-(--status-warning)" />
+          {tally.working}
+        </span>
+      ) : null}
+      {tally.done > 0 ? (
+        <span aria-hidden className="flex items-center gap-0.5 text-muted-foreground">
+          <span className="size-1.5 rounded-full bg-(--status-success)" />
+          {tally.done}
+        </span>
+      ) : null}
+    </span>
+  )
 }
 
 /** Buttons inside the elevator car, top floor first like the building itself. */
@@ -16,6 +52,7 @@ export default function ElevatorPanel({
   floors,
   currentFloorId,
   lobbyShort,
+  tallies,
   onChoose
 }: ElevatorPanelProps): React.JSX.Element {
   const listRef = useRef<HTMLDivElement>(null)
@@ -67,6 +104,7 @@ export default function ElevatorPanel({
               {floorIndicator(floor, lobbyShort)}
             </span>
             <span className="min-w-0 truncate">{floor.name}</span>
+            <FloorTallyChips tally={tallies.get(floor.id)} />
           </button>
         ))}
       </div>

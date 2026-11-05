@@ -10,7 +10,9 @@ import { randomUUID } from 'node:crypto'
 import { basename, extname, join, normalize, sep } from 'node:path'
 import { z } from 'zod'
 import type { CustomPet } from '../../../shared/pet-types'
+import type { PetCatalogQuery } from '../../../shared/pet-catalog-types'
 import { importPetBundle } from './pet-bundle-import'
+import { installPetFromCatalog, listPetCatalog } from './pet-catalog'
 import { classifyFile } from './pet-image-formats'
 import { MAX_BYTES } from './pet-import-size-limits'
 import { getPetsDir, isSafeId, resolvePetFile } from './pet-storage-paths'
@@ -106,6 +108,12 @@ export function registerPetHandlers(): void {
 
   ipcMain.handle('pet:importPetBundle', (event) =>
     withPetImportFailure(() => importPetBundle(event))
+  )
+
+  ipcMain.handle('pet:catalogList', (_event, query: PetCatalogQuery) => listPetCatalog(query))
+
+  ipcMain.handle('pet:catalogInstall', (_event, id: unknown) =>
+    withPetImportFailure(() => installPetFromCatalog(id))
   )
 
   ipcMain.handle(
