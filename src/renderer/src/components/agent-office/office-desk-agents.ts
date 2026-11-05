@@ -12,10 +12,15 @@ import { getCachedSprite } from './vendor/pixel-agents/webview-ui/src/office/spr
 export type DeskAgent = { agent: OfficeAgent; seat: DeskSeat; sprite: PetSprite }
 
 /** Where an agent is this frame: at its desk unless it got up, which way it walks, and how high it hops. */
-export type AgentStance = { feet: WorldPoint; walking: Facing | null; lift: number }
+export type AgentStance = {
+  feet: WorldPoint
+  walking: Facing | null
+  lift: number
+  atDesk: boolean
+}
 
 export function seatedStance({ seat }: DeskAgent): AgentStance {
-  return { feet: seat.feet, walking: null, lift: 0 }
+  return { feet: seat.feet, walking: null, lift: 0, atDesk: true }
 }
 
 const BOB_MS = 450
@@ -65,7 +70,7 @@ export function deskAgentDrawables(
   let holdMs = Number.POSITIVE_INFINITY
   deskAgents.forEach((desk, i) => {
     const { agent, sprite } = desk
-    const { feet, walking, lift } = stanceOf(desk)
+    const { feet, walking, lift, atDesk } = stanceOf(desk)
     const { strip, moving } = stripFor(agent, sprite, walking)
     const shown = moving ? frameAt(strip, now + i * STAGGER_MS) : null
     if (shown) {
@@ -83,7 +88,8 @@ export function deskAgentDrawables(
     const x = offsetX + (raised.x - BUBBLE_HALF_WIDTH) * zoom
     const y = offsetY + (raised.y - FIGURE_HEIGHT - BUBBLE_HEIGHT - bob) * zoom
     drawables.push({ zY: BUBBLE_Z, draw: (c) => c.drawImage(bubble, x, y) })
-    const badge = agentBadge(agent.agentType, zoom)
+    // Why: the kind badge stays with the desk, so bubbles of agents side by side on the sofa do not collide.
+    const badge = atDesk ? agentBadge(agent.agentType, zoom) : null
     if (badge) {
       const badgeX = x + (BUBBLE_WIDTH + 1) * zoom
       drawables.push({ zY: BUBBLE_Z, draw: (c) => c.drawImage(badge, badgeX, y) })

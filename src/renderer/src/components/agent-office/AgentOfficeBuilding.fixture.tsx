@@ -78,11 +78,9 @@ function teamAgents(): OfficeAgent[] {
   return agents.map((agent) => ({ ...agent, petId: drawn.get(agent.key) ?? agent.petId }))
 }
 
-/** The same agents, with two that were working now done. */
-function finishedAgents(): OfficeAgent[] {
-  return fakeAgents().map((agent) =>
-    agent.key === 'pane-0' || agent.key === 'pane-4' ? { ...agent, bucket: 'done' } : agent
-  )
+/** The same agents with some of them in a new state. */
+function agentsWith(changes: Record<string, DashboardBucket>): OfficeAgent[] {
+  return fakeAgents().map((agent) => ({ ...agent, bucket: changes[agent.key] ?? agent.bucket }))
 }
 
 // Why: live agents come from terminals a fixture cannot start, so this drives the building directly.
@@ -147,10 +145,30 @@ export const teamFloor = defineFixture({
 export const cheer = defineFixture({
   width: 960,
   store: { repos },
-  render: () => <StaffedFloor then={finishedAgents()} />,
+  render: () => <StaffedFloor then={agentsWith({ 'pane-0': 'done', 'pane-4': 'done' })} />,
   interact: async (frame) => {
     await waitFor(frame, 'canvas[data-ready]')
     await new Promise((resolve) => setTimeout(resolve, 380))
+  }
+})
+
+export const lounge = defineFixture({
+  width: 960,
+  store: { repos },
+  render: () => <StaffedFloor agents={agentsWith({ 'pane-5': 'idle' })} />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+})
+
+export const backToWork = defineFixture({
+  width: 960,
+  store: { repos },
+  render: () => <StaffedFloor then={agentsWith({ 'pane-3': 'working', 'pane-2': 'attention' })} />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 900))
   }
 })
 

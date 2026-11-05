@@ -3,6 +3,8 @@ import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 export type TilePoint = { col: number; row: number }
 export type WorldPoint = { x: number; y: number }
 export type Facing = 'left' | 'right'
+/** A place to stop: the tile you walk to, and where your feet end up, e.g. down on a seat. */
+export type Spot = { tile: TilePoint; feet: WorldPoint }
 
 /** Someone moving through the office; x/y are world pixels between their feet. */
 export type Walker = {

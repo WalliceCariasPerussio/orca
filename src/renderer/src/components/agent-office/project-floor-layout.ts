@@ -1,5 +1,5 @@
 import { createRoomLayout } from './office-room-grid'
-import type { TilePoint, WorldPoint } from './office-walker'
+import { tileFeet, type Spot, type TilePoint, type WorldPoint } from './office-walker'
 import {
   TILE_SIZE,
   TileType,
@@ -19,6 +19,36 @@ export const MAX_DESKS = DESK_COLS.length * DESK_ROWS.length
 export const TEAM_BOARD = { col: 2, row: 0, tiles: 2 }
 /** Where you stand to read the team board. */
 export const TEAM_BOARD_FRONT_TILE = { col: 3, row: 2 }
+
+const SOFA = { col: 15, row: 8 }
+const COFFEE_TABLE = { col: 15, row: 9 }
+/** How far down into the sofa a sitter's feet go, so its backrest hides their legs. */
+const SOFA_SIT = 10
+
+function sofaSeat(col: number): Spot {
+  return {
+    tile: { col, row: SOFA.row - 1 },
+    feet: { x: col * TILE_SIZE + TILE_SIZE / 2, y: SOFA.row * TILE_SIZE + SOFA_SIT }
+  }
+}
+
+function standing(col: number, row: number): Spot {
+  return { tile: { col, row }, feet: tileFeet({ col, row }) }
+}
+
+/** Where agents with nothing to do hang out, best first: on the sofa, then around the coffee table. */
+export const LOUNGE_SPOTS: readonly Spot[] = [
+  sofaSeat(SOFA.col),
+  sofaSeat(SOFA.col + 1),
+  standing(14, 9),
+  standing(17, 9),
+  standing(14, 10),
+  standing(17, 10),
+  standing(15, 11),
+  standing(16, 11),
+  standing(14, 8),
+  standing(17, 8)
+]
 
 /** Where an agent works: the tile it stands on, the point between its feet, and its desk's corner tile. */
 export type DeskSeat = { tile: TilePoint; feet: WorldPoint; desk: TilePoint }
@@ -87,8 +117,8 @@ export function createProjectFloorLayout(
       { type: 'DOUBLE_BOOKSHELF', col: 17, row: 0 },
       ...deskFurniture(agentCount),
       { type: 'LARGE_PLANT', col: 17, row: 2 },
-      { type: 'SOFA_FRONT', col: 15, row: 8 },
-      { type: 'COFFEE_TABLE', col: 15, row: 9 },
+      { type: 'SOFA_FRONT', col: SOFA.col, row: SOFA.row },
+      { type: 'COFFEE_TABLE', col: COFFEE_TABLE.col, row: COFFEE_TABLE.row },
       { type: 'PLANT', col: 18, row: 8 },
       { type: 'PLANT_2', col: 17, row: 12 },
       { type: 'BIN', col: 14, row: 12 }

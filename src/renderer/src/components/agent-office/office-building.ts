@@ -247,8 +247,7 @@ export class OfficeBuilding {
       this.crew.clear()
       return buildOfficeScene(layoutForFloor(floor, 0), RECEPTIONIST_BLOCKED)
     }
-    this.crew.seat(this.agents, floor.id, this.staffSprites)
-    return buildOfficeScene(layoutForFloor(floor, this.crew.deskCount), this.crew.blockedTiles())
+    return this.crew.seat(this.agents, floor, this.staffSprites)
   }
 
   private seatStaff(): void {
@@ -291,13 +290,13 @@ export class OfficeBuilding {
 
   private tick(dt: number, now: number): FrameResult {
     stepWalker(this.walker, dt)
+    const crewMoving = this.crew.tick(dt, now)
     this.trip.tick(dt, now, this.walker, this.floors, this.floor)
     if (this.trip.free && !this.floors.includes(this.floor)) {
       this.leaveRemovedFloor()
     }
     const holdMs = this.draw(now)
-    const animating = isWalking(this.walker) || this.trip.animating || this.crew.animating(now)
-    return { animating, holdMs }
+    return { animating: isWalking(this.walker) || this.trip.animating || crewMoving, holdMs }
   }
 
   private draw(now: number): number {
