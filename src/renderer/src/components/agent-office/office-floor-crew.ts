@@ -1,5 +1,6 @@
 import type { OfficeAgent } from './office-agents'
 import { Cheers } from './office-cheers'
+import { daylightAt, deskLamp } from './office-daylight'
 import { Departures } from './office-departures'
 import type { DeskAgent } from './office-desk-agents'
 import { FIGURE_HEIGHT } from './office-figures'
@@ -27,6 +28,7 @@ import { thinkerNow, thoughtCloud } from './office-thought-clouds'
 import { sameThoughts, type OfficeThoughts } from './office-thoughts'
 import type { TilePoint, WorldPoint } from './office-walker'
 import { RECEPTIONIST_BLOCKED } from './reception-layout'
+import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
 /** Agents held at their desk because their sub-agents stand there with them. */
 function pinnedKeys(agents: readonly OfficeAgent[]): Set<string> {
@@ -119,6 +121,16 @@ export class FloorCrew {
     })
     const drawn = staffDrawables(this.staff, now, projection, stanceOf)
     drawn.drawables.push(...this.departures.drawables(now, projection))
+    if (daylightAt(Date.now()) === 'night') {
+      for (const desk of this.staff.desks) {
+        const busy = desk.agent.bucket === 'working' || desk.agent.bucket === 'attention'
+        if (busy && this.roaming.stance(desk).atDesk) {
+          const { col, row } = desk.seat.desk
+          const lamp = { x: (col + 1.5) * TILE_SIZE, y: row * TILE_SIZE + 10 }
+          drawn.drawables.push(deskLamp(lamp, projection))
+        }
+      }
+    }
     for (const desk of this.staff.desks) {
       const { feet } = this.roaming.stance(desk)
       const confetti = this.cheers.confetti(desk.agent.key, feet, now, projection)

@@ -7,6 +7,7 @@ import {
   ELEVATOR_Z,
   type ElevatorView
 } from './office-elevator'
+import { daylightAt, drawWindows, nightTint } from './office-daylight'
 import { figureDrawable } from './office-figures'
 import type { PetFrame, PetSprite } from './office-pet-sprite'
 import { ROOM_SIGN } from './office-room-grid'
@@ -84,7 +85,12 @@ export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: Buil
   if (receptionist) {
     extras.push(figureDrawable({ ...receptionist, zY: receptionist.feet.y, projection }))
   }
+  const daylight = daylightAt(frame.time)
+  if (daylight === 'night') {
+    extras.push(nightTint(projection))
+  }
   drawOfficeScene(context, frame.scene, projection, frame.widthPx, frame.heightPx, extras)
+  drawWindows(context, projection, daylight)
   drawWallSign(context, projection, { ...ROOM_SIGN, text: frame.sign })
   drawWallClock(context, projection, frame.time)
   if (frame.boardLabel) {
