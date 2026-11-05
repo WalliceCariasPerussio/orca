@@ -19394,6 +19394,18 @@
           "desk": "Free desk",
           "deskHint": "click to hire an agent for this project"
         },
+        "thought": {
+          "edit": "Editing",
+          "write": "Writing",
+          "read": "Reading",
+          "run": "Running",
+          "search": "Looking for",
+          "web": "Researching",
+          "delegate": "Delegating",
+          "plan": "Planning",
+          "allow": "Allow: {{value0}}?",
+          "thinking": "Thinking…"
+        },
         "visit": {
           "button": "Go to who needs you ({{value0}})",
           "hint": "Takes the elevator if needed, walks up to the agent's desk and opens its terminal. Click again for the next one."

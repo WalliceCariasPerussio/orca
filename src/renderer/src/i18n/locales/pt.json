@@ -19995,6 +19995,18 @@
           "desk": "Mesa vaga",
           "deskHint": "clique para contratar um agente para este projeto"
         },
+        "thought": {
+          "edit": "Editando",
+          "write": "Escrevendo",
+          "read": "Lendo",
+          "run": "Rodando",
+          "search": "Procurando",
+          "web": "Pesquisando",
+          "delegate": "Delegando",
+          "plan": "Planejando",
+          "allow": "Permitir: {{value0}}?",
+          "thinking": "Pensando…"
+        },
         "visit": {
           "button": "Ir até quem precisa de você ({{value0}})",
           "hint": "Pega o elevador se precisar, vai até a mesa do agente e abre o terminal dele. Clique de novo para ir ao próximo."

@@ -5,12 +5,11 @@ import type { OfficeBuildingSetup, OfficeHover } from './office-building-setup'
 import { isElevatorTile } from './office-elevator'
 import { ElevatorTrip } from './office-elevator-trip'
 import { FloorCrew } from './office-floor-crew'
-import { callingFloor, layoutForFloor, rememberFloorId, type OfficeFloor } from './office-floors'
+import { callingFloor, rememberFloorId, type OfficeFloor } from './office-floors'
 import { FrameLoop, type FrameResult } from './office-frame-loop'
 import { frameAt, type PetSprite } from './office-pet-sprite'
 import { ELEVATOR_FRONT_TILE } from './office-room-grid'
 import {
-  buildOfficeScene,
   cssAtWorld,
   projectScene,
   tileAtCss,
@@ -18,22 +17,11 @@ import {
   type OfficeProjection,
   type OfficeScene
 } from './office-scene'
-import { spotAt, type SpotHit } from './office-spots'
+import type { OfficeThoughts } from './office-thoughts'
 import { AgentVisit } from './office-visit'
 import { WalkCycle } from './office-walk-cycle'
-import {
-  createWalker,
-  isWalking,
-  stepWalker,
-  type TilePoint,
-  type Walker,
-  type WorldPoint
-} from './office-walker'
-import {
-  RECEPTION_ENTRANCE_TILE,
-  RECEPTIONIST_BLOCKED,
-  RECEPTIONIST_FEET
-} from './reception-layout'
+import { createWalker, isWalking, stepWalker, type TilePoint, type Walker } from './office-walker'
+import { RECEPTION_ENTRANCE_TILE, RECEPTIONIST_FEET } from './reception-layout'
 import { findPath, isWalkable } from './vendor/pixel-agents/webview-ui/src/office/layout/tileMap'
 
 /** The office you walk through: one floor on screen, its agents, the elevator, and you. */
@@ -78,7 +66,7 @@ export class OfficeBuilding {
     this.floor = setup.floors.find((f) => f.id === setup.floorId) ?? setup.floors[0]
     this.staffSprites = setup.staffSprites
     this.crew = new FloorCrew(setup.hireLabel)
-    this.scene = this.sceneFor(this.floor)
+    this.scene = this.crew.seat(this.agents, this.floor, this.staffSprites)
     this.avatar = setup.avatar
     const entering = setup.startAtEntrance && this.floor.number === 0
     this.walker = createWalker(entering ? RECEPTION_ENTRANCE_TILE : ELEVATOR_FRONT_TILE)
@@ -129,6 +117,13 @@ export class OfficeBuilding {
     this.loop.invalidate()
   }
 
+  /** What each agent thinks out loud; changes often, so it never reseats anyone. */
+  setThoughts(thoughts: OfficeThoughts): void {
+    if (this.crew.setThoughts(thoughts)) {
+      this.loop.invalidate()
+    }
+  }
+
   setStaffSprites(sprites: ReadonlyMap<string, PetSprite>): void {
     this.staffSprites = sprites
     this.seatStaff()
@@ -146,7 +141,7 @@ export class OfficeBuilding {
       this.setup.onAgentClick(clicked.opens)
       return
     }
-    const spot = this.spotAt(world)
+    const spot = this.crew.spotAt(this.floor.number === 0, world)
     if (spot) {
       this.walkAlong(this.pathTo(spot.front))
       this.setup.onSpotClick(spot.id)
@@ -170,7 +165,7 @@ export class OfficeBuilding {
       const at = cssAtWorld(this.projection, found.tip.x, found.tip.y)
       return { kind: 'agent', agent: found.agent, ...at }
     }
-    const spot = this.spotAt(world)
+    const spot = this.crew.spotAt(this.floor.number === 0, world)
     return spot?.tip
       ? { kind: 'spot', spot: spot.id, ...cssAtWorld(this.projection, spot.tip.x, spot.tip.y) }
       : null
@@ -234,20 +229,8 @@ export class OfficeBuilding {
     this.loop.dispose()
   }
 
-  private spotAt(world: WorldPoint): SpotHit | null {
-    return spotAt(this.floor.number === 0, world) ?? this.crew.freeDeskAt(world)
-  }
-
-  private sceneFor(floor: OfficeFloor): OfficeScene {
-    if (floor.number === 0) {
-      this.crew.clear()
-      return buildOfficeScene(layoutForFloor(floor, 0), RECEPTIONIST_BLOCKED)
-    }
-    return this.crew.seat(this.agents, floor, this.staffSprites)
-  }
-
   private seatStaff(): void {
-    this.scene = this.sceneFor(this.floor)
+    this.scene = this.crew.seat(this.agents, this.floor, this.staffSprites)
     if (this.projection) {
       const ratio = this.projection.devicePixelRatio
       this.projection = projectScene(this.scene, this.widthPx, this.heightPx, ratio)

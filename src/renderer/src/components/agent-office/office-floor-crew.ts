@@ -1,6 +1,7 @@
 import type { OfficeAgent } from './office-agents'
 import { Cheers } from './office-cheers'
 import type { DeskAgent } from './office-desk-agents'
+import { FIGURE_HEIGHT } from './office-figures'
 import {
   EMPTY_STAFF,
   freeDeskAt,
@@ -20,8 +21,11 @@ import {
   type OfficeProjection,
   type OfficeScene
 } from './office-scene'
-import type { SpotHit } from './office-spots'
+import { spotAt, type SpotHit } from './office-spots'
+import { thinkerNow, thoughtCloud } from './office-thought-clouds'
+import { sameThoughts, type OfficeThoughts } from './office-thoughts'
 import type { TilePoint, WorldPoint } from './office-walker'
+import { RECEPTIONIST_BLOCKED } from './reception-layout'
 
 /** Agents held at their desk because their sub-agents stand there with them. */
 function pinnedKeys(agents: readonly OfficeAgent[]): Set<string> {
@@ -38,15 +42,20 @@ export class FloorCrew {
   private staff: FloorStaff = EMPTY_STAFF
   private readonly cheers = new Cheers()
   private readonly roaming = new Roaming()
+  private thoughts: OfficeThoughts = new Map()
 
   constructor(private readonly hireLabel: string) {}
 
-  /** Seats the floor's agents and builds its room, with a desk for each of them. */
+  /** Builds the room on screen; on a project floor, seats its agents with a desk for each. */
   seat(
     agents: readonly OfficeAgent[],
     floor: OfficeFloor,
     sprites: ReadonlyMap<string, PetSprite>
   ): OfficeScene {
+    if (floor.number === 0) {
+      this.clear()
+      return buildOfficeScene(layoutForFloor(floor, 0), RECEPTIONIST_BLOCKED)
+    }
     this.staff = staffFloor(agents, floor.id, sprites, this.hireLabel)
     const layout = layoutForFloor(floor, this.staff.deskCount)
     const scene = buildOfficeScene(layout, staffTiles(this.staff))
@@ -57,6 +66,15 @@ export class FloorCrew {
   clear(): void {
     this.staff = EMPTY_STAFF
     this.roaming.clear()
+  }
+
+  /** Returns false when nothing anyone thinks has changed, so the frame can stay as it is. */
+  setThoughts(thoughts: OfficeThoughts): boolean {
+    if (sameThoughts(this.thoughts, thoughts)) {
+      return false
+    }
+    this.thoughts = thoughts
+    return true
   }
 
   /** Every agent in the building, on any floor, so a finish seen anywhere is not cheered late. */
@@ -80,8 +98,9 @@ export class FloorCrew {
     return desk ? { col: desk.seat.tile.col - 1, row: desk.seat.tile.row } : null
   }
 
-  freeDeskAt(world: WorldPoint): SpotHit | null {
-    return freeDeskAt(this.staff, world)
+  /** Something to click and walk up to: the receptionist, the team board or a free desk. */
+  spotAt(inLobby: boolean, world: WorldPoint): SpotHit | null {
+    return spotAt(inLobby, world) ?? freeDeskAt(this.staff, world)
   }
 
   drawables(
@@ -100,6 +119,17 @@ export class FloorCrew {
         drawn.drawables.push(confetti)
       }
     }
-    return { ...drawn, holdMs: Math.min(drawn.holdMs, this.roaming.wakeInMs(now)) }
+    const thinkers = this.staff.desks.map((desk) => {
+      const { feet, lift } = stanceOf(desk)
+      const head = { x: feet.x, y: feet.y - lift - FIGURE_HEIGHT }
+      return { key: desk.agent.key, bucket: desk.agent.bucket, head }
+    })
+    const turn = thinkerNow(thinkers, this.thoughts, now)
+    const text = turn.thinker && this.thoughts.get(turn.thinker.key)
+    if (turn.thinker && text) {
+      drawn.drawables.push(thoughtCloud(text, turn.thinker.head, projection))
+    }
+    const holdMs = Math.min(drawn.holdMs, this.roaming.wakeInMs(now), turn.holdMs)
+    return { ...drawn, holdMs }
   }
 }

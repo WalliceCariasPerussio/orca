@@ -18,6 +18,7 @@ import { useFloorTeams } from './office-floor-teams'
 import { buildFloors, LOBBY_FLOOR_ID, needingYou, readRememberedFloorId } from './office-floors'
 import { useStaffPets } from './office-staff-pets'
 import { useTeamPets } from './office-team-draw'
+import { thoughtsFrom } from './office-thoughts'
 import { useOfficeAgentWindow } from './use-office-agent-window'
 import { useOfficeCast } from './use-office-cast'
 
@@ -56,6 +57,11 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   ])
 
   const snapshot = useLiveDashboardSnapshot()
+  const statusByPaneKey = useAppStore((s) => s.agentStatusByPaneKey)
+  const thoughts = useMemo(
+    () => thoughtsFrom(snapshot.cards, statusByPaneKey),
+    [snapshot.cards, statusByPaneKey]
+  )
   const freshAgents = officeAgentsFrom(snapshot.cards, staffPets)
   // Why: the snapshot rebuilds on every status tick; reseat the floor only when what it shows changes.
   const agentsKey = freshAgents
@@ -92,6 +98,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     boardLabel,
     hireLabel,
     agents,
+    thoughts,
     cast
   })
   useLayoutEffect(() => {
@@ -104,6 +111,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       boardLabel,
       hireLabel,
       agents,
+      thoughts,
       cast
     }
   })
@@ -156,6 +164,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       }
     })
     building.setAgents(setup.agents)
+    building.setThoughts(setup.thoughts)
     buildingRef.current = building
     let measured = ''
     // Why: resize events also fire without a size change, and would close the reception menu for nothing.
@@ -196,6 +205,10 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   useEffect(() => {
     buildingRef.current?.setAgents(agents)
   }, [agents])
+
+  useEffect(() => {
+    buildingRef.current?.setThoughts(thoughts)
+  }, [thoughts])
 
   const currentFloor = floors.find((f) => f.id === floorId) ?? floors[0]
   return (

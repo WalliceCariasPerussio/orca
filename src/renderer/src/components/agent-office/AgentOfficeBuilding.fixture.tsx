@@ -1,48 +1,17 @@
-import { useEffect, useRef } from 'react'
 import { defineFixture } from '../../component-fixtures/component-fixture'
-import type { DashboardBucket } from '../../../../shared/dashboard-snapshot'
-import type { Repo } from '../../../../shared/repo-types'
 import AgentOfficeBuilding from './AgentOfficeBuilding'
 import type { OfficeAgent } from './office-agents'
-import { OfficeBuilding } from './office-building'
-import { buildFloors } from './office-floors'
-import { DEFAULT_STAFF_PETS, roleForAgentType } from './office-staff-pets'
+import {
+  agentsWith,
+  fakeAgents,
+  StaffedFloor,
+  stagedRepos as repos,
+  waitFor
+} from './office-staged-floor'
 import { drawTeamPets } from './office-team-draw'
-import { useOfficeCast } from './use-office-cast'
 import { BUNDLED_PETS, GREMLIN_PET_ID, OPENCODE_PET_ID } from '../pet/pet-models'
 
 const FLOOR_KEY = 'orca.agentOffice.floorId'
-
-const repos: Repo[] = [
-  { id: 'www', path: 'F:/www', displayName: 'www', badgeColor: '#6b7280', addedAt: 1 },
-  { id: 'mesa', path: 'F:/MesaLocal', displayName: 'MesaLocal', badgeColor: '#3b82f6', addedAt: 2 },
-  { id: 'banca', path: 'F:/banca', displayName: 'banca', badgeColor: '#16a34a', addedAt: 3 }
-]
-
-const STAFF: [string, DashboardBucket, string][] = [
-  ['claude', 'working', 'feat/login-social'],
-  ['opencode', 'attention', 'fix/cache'],
-  ['codex', 'done', 'main'],
-  ['claude', 'idle', 'feat/login-social'],
-  ['codex', 'working', 'fix/cache'],
-  ['gemini', 'working', 'main'],
-  ['claude', 'attention', 'fix/cache']
-]
-
-function fakeAgents(): OfficeAgent[] {
-  return STAFF.map(([agentType, bucket, worktree], i) => ({
-    key: `pane-${i}`,
-    floorId: 'mesa',
-    name: `${agentType} ${i + 1}`,
-    agentType,
-    bucket,
-    petId: DEFAULT_STAFF_PETS[roleForAgentType(agentType)],
-    worktreeId: `wt-${worktree}`,
-    worktreeName: worktree,
-    startedAt: i,
-    subagents: []
-  }))
-}
 
 /** Two desks with sub-agents: one with two in its terminal, one with a spawned Codex and four more. */
 function crewAgents(): OfficeAgent[] {
@@ -78,11 +47,6 @@ function teamAgents(): OfficeAgent[] {
   return agents.map((agent) => ({ ...agent, petId: drawn.get(agent.key) ?? agent.petId }))
 }
 
-/** The same agents with some of them in a new state. */
-function agentsWith(changes: Record<string, DashboardBucket>): OfficeAgent[] {
-  return fakeAgents().map((agent) => ({ ...agent, bucket: changes[agent.key] ?? agent.bucket }))
-}
-
 /** The usual floor, plus an agent two floors up waiting on you. */
 function agentsWithCallUpstairs(): OfficeAgent[] {
   const upstairs: OfficeAgent = {
@@ -95,61 +59,6 @@ function agentsWithCallUpstairs(): OfficeAgent[] {
     worktreeName: 'feat/pix'
   }
   return [...agentsWith({ 'pane-1': 'working', 'pane-6': 'working' }), upstairs]
-}
-
-// Why: live agents come from terminals a fixture cannot start, so this drives the building directly.
-function StaffedFloor({
-  agents = fakeAgents(),
-  then,
-  visit
-}: {
-  agents?: OfficeAgent[]
-  /** Agents a moment later, to catch the office reacting to a change. */
-  then?: OfficeAgent[]
-  /** An agent you set off to, as the "who needs you" button does. */
-  visit?: string
-}): React.JSX.Element {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { cast } = useOfficeCast(Object.values(DEFAULT_STAFF_PETS))
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!cast || !canvas) {
-      return
-    }
-    const building = new OfficeBuilding({
-      floors: buildFloors(repos, 'Recepção'),
-      floorId: 'mesa',
-      startAtEntrance: false,
-      avatar: cast.avatar,
-      receptionist: cast.receptionist,
-      staffSprites: cast.staff,
-      lobbySign: 'Recepção',
-      lobbyShort: 'T',
-      teamBoardLabel: 'Equipe',
-      hireLabel: 'Vaga',
-      onPanelChange: () => {},
-      onFloorChange: () => {},
-      onAgentClick: () => {},
-      onSpotClick: () => {}
-    })
-    building.setAgents(agents)
-    building.attach(canvas, 960, 600, 1)
-    const later = window.setTimeout(() => {
-      if (then) {
-        building.setAgents(then)
-      }
-      if (visit) {
-        building.visit(visit)
-      }
-      canvas.dataset.ready = 'true'
-    }, 200)
-    return () => {
-      window.clearTimeout(later)
-      building.dispose()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- a scene's agents are fixed
-  }, [cast])
-  return <canvas ref={canvasRef} style={{ width: 960, height: 600 }} />
 }
 
 export const teamFloor = defineFixture({
@@ -322,12 +231,6 @@ export const receptionDesk = defineFixture({
     await waitFor(frame, '[role="dialog"]')
   }
 })
-
-async function waitFor(frame: HTMLElement, selector: string): Promise<void> {
-  for (let i = 0; i < 80 && !frame.querySelector(selector); i++) {
-    await new Promise((resolve) => setTimeout(resolve, 100))
-  }
-}
 
 function Stage(): React.JSX.Element {
   return (
