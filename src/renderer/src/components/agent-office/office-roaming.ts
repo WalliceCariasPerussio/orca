@@ -11,7 +11,7 @@ import {
   type TilePoint,
   type Walker
 } from './office-walker'
-import { LOUNGE_SPOTS } from './project-floor-layout'
+import { COFFEE_SPOTS, LOUNGE_SPOTS } from './project-floor-layout'
 import { findPath, isWalkable } from './vendor/pixel-agents/webview-ui/src/office/layout/tileMap'
 
 type Span = readonly [min: number, max: number]
@@ -47,6 +47,8 @@ type Roam = {
   home: Spot | null
   /** Counts its strolls, so each draws a different place. */
   moves: number
+  /** Poured a coffee on a stroll, and carries it until work calls. */
+  mug: boolean
 }
 
 function placeAt(walker: Walker, spot: Spot): void {
@@ -151,7 +153,8 @@ export class Roaming {
       feet: { x: walker.x, y: walker.y },
       walking: isWalking(walker) ? walker.facing : null,
       lift: 0,
-      atDesk: seated
+      atDesk: seated,
+      mug: roam.mug
     }
   }
 
@@ -180,7 +183,8 @@ export class Roaming {
       route: [],
       nextAt: 0,
       home: null,
-      moves: 0
+      moves: 0,
+      mug: false
     }
     if (!arriving) {
       // Why: someone who starts work while you watch comes in by the elevator, like you.
@@ -212,6 +216,9 @@ export class Roaming {
       return
     }
     roam.target = null
+    if (COFFEE_SPOTS.some((spot) => sameTile(spot.tile, target.tile))) {
+      roam.mug = true
+    }
     if (roam.returning) {
       Object.assign(roam, { returning: false, seated: true, nextAt: 0 })
       return
@@ -222,7 +229,7 @@ export class Roaming {
 
   private decide(roam: Roam, desk: DeskAgent, now: number): void {
     if (!this.isFree(desk)) {
-      Object.assign(roam, { route: [], home: null, nextAt: 0 })
+      Object.assign(roam, { route: [], home: null, nextAt: 0, mug: false })
       if (!roam.seated && !roam.returning) {
         roam.returning = true
         this.go(roam, desk.seat, true)
@@ -243,7 +250,7 @@ export class Roaming {
     }
     if (roam.route.length === 0) {
       roam.home ??= this.claimHome()
-      roam.route = [this.strollSpot(desk.agent.key, roam), ...(roam.home ? [roam.home] : [])]
+      roam.route = [this.errand(desk.agent.key, roam), ...(roam.home ? [roam.home] : [])]
     }
     const next = roam.route.shift()
     if (next) {
@@ -290,6 +297,16 @@ export class Roaming {
         (spot) => this.isOpen(spot.tile) && !held.some((home) => sameTile(home.tile, spot.tile))
       ) ?? null
     )
+  }
+
+  /** Where a stroll leads: now and then to the coffee counter, otherwise anywhere on the floor. */
+  private errand(key: string, roam: Roam): Spot {
+    const counter = COFFEE_SPOTS.filter((spot) => this.isOpen(spot.tile))
+    if (!roam.mug && counter.length > 0 && toss(`${key}:coffee:${roam.moves}`, 3) === 0) {
+      roam.moves++
+      return counter[toss(key, counter.length)]
+    }
+    return this.strollSpot(key, roam)
   }
 
   private strollSpot(key: string, roam: Roam): Spot {

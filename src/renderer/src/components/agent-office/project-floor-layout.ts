@@ -22,6 +22,7 @@ export const TEAM_BOARD = { col: 2, row: 0, tiles: 2 }
 export const TEAM_BOARD_FRONT_TILE = { col: 3, row: 2 }
 
 const SOFA = { col: 15, row: 8 }
+const COFFEE_COUNTER = { col: 15, row: 4 }
 const COFFEE_TABLE = { col: 15, row: 9 }
 /** How far down into the sofa a sitter's feet go, so its backrest hides their legs. */
 const SOFA_SIT = 10
@@ -49,6 +50,12 @@ export const LOUNGE_SPOTS: readonly Spot[] = [
   standing(16, 11),
   standing(14, 8),
   standing(17, 8)
+]
+
+/** In front of the coffee counter, where agents pour a mug on their way to rest. */
+export const COFFEE_SPOTS: readonly Spot[] = [
+  standing(COFFEE_COUNTER.col, COFFEE_COUNTER.row + 2),
+  standing(COFFEE_COUNTER.col + 1, COFFEE_COUNTER.row + 2)
 ]
 
 /** Where an agent works: the tile it stands on, the point between its feet, and its desk's corner tile. */
@@ -118,6 +125,9 @@ export function createProjectFloorLayout(
       { type: 'DOUBLE_BOOKSHELF', col: 17, row: 0 },
       ...deskFurniture(agentCount),
       { type: 'LARGE_PLANT', col: 17, row: 2 },
+      { type: 'SMALL_TABLE_FRONT', ...COFFEE_COUNTER },
+      { type: 'COFFEE', col: COFFEE_COUNTER.col, row: COFFEE_COUNTER.row + 1 },
+      { type: 'COFFEE', col: COFFEE_COUNTER.col + 1, row: COFFEE_COUNTER.row + 1 },
       { type: 'SOFA_FRONT', col: SOFA.col, row: SOFA.row },
       { type: 'COFFEE_TABLE', col: COFFEE_TABLE.col, row: COFFEE_TABLE.row },
       { type: 'PLANT', col: 18, row: 8 },

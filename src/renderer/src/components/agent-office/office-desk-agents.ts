@@ -2,6 +2,7 @@ import { GREMLIN_PET_ID } from '../pet/pet-models'
 import { agentBadge } from './office-agent-badges'
 import type { OfficeAgent } from './office-agents'
 import { bubbleFor } from './office-bubbles'
+import { mugDrawable } from './office-coffee'
 import { FIGURE_HEIGHT, figureDrawable } from './office-figures'
 import { frameAt, type PetSprite } from './office-pet-sprite'
 import type { DepthDrawable, OfficeProjection } from './office-scene'
@@ -17,10 +18,12 @@ export type AgentStance = {
   walking: Facing | null
   lift: number
   atDesk: boolean
+  /** Carries a mug from the coffee counter. */
+  mug: boolean
 }
 
 export function seatedStance({ seat }: DeskAgent): AgentStance {
-  return { feet: seat.feet, walking: null, lift: 0, atDesk: true }
+  return { feet: seat.feet, walking: null, lift: 0, atDesk: true, mug: false }
 }
 
 const BOB_MS = 450
@@ -70,7 +73,7 @@ export function deskAgentDrawables(
   let holdMs = Number.POSITIVE_INFINITY
   deskAgents.forEach((desk, i) => {
     const { agent, sprite } = desk
-    const { feet, walking, lift, atDesk } = stanceOf(desk)
+    const { feet, walking, lift, atDesk, mug } = stanceOf(desk)
     const { strip, moving } = stripFor(agent, sprite, walking)
     const shown = moving ? frameAt(strip, now + i * STAGGER_MS) : null
     if (shown) {
@@ -79,6 +82,10 @@ export function deskAgentDrawables(
     const frame = shown?.frame ?? strip[0]
     const raised = { x: feet.x, y: feet.y - lift }
     drawables.push(figureDrawable({ sprite, frame, feet: raised, zY: feet.y, projection }))
+    const held = mug ? mugDrawable(raised, projection) : null
+    if (held) {
+      drawables.push(held)
+    }
     let bob = 0
     if (agent.bucket === 'attention') {
       bob = Math.floor(now / BOB_MS) % 2
