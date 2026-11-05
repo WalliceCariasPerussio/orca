@@ -15,12 +15,15 @@ function bucketLabel(bucket: DashboardBucket): string {
   }
 }
 
-/** Same hover target, same label: keeps the tip from re-rendering as the pointer moves. */
+/** Same label in the same place: keeps the tip still as the pointer moves, but not after a resize or a new state. */
 export function hoverKey(hover: OfficeHover | null | undefined): string | null {
   if (!hover) {
     return null
   }
-  return hover.kind === 'agent' ? `agent:${hover.agent.key}` : `spot:${hover.spot}`
+  const place = `${hover.left},${hover.top}`
+  return hover.kind === 'agent'
+    ? `agent:${hover.agent.key}:${hover.agent.bucket}:${hover.agent.name}:${place}`
+    : `spot:${hover.spot}:${place}`
 }
 
 /** The label over whatever the pointer rests on: an agent, or the team board. */

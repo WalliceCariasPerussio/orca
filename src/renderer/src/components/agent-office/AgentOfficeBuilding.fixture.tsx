@@ -25,7 +25,7 @@ const STAFF: [string, DashboardBucket][] = [
   ['codex', 'done'],
   ['claude', 'idle'],
   ['codex', 'working'],
-  ['opencode', 'working'],
+  ['gemini', 'working'],
   ['claude', 'attention']
 ]
 

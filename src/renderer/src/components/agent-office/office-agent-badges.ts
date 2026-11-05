@@ -20,22 +20,43 @@ export function onBadgeReady(listener: () => void): () => void {
   return () => readyListeners.delete(listener)
 }
 
-// Why: Orca's own agent icons, rendered to markup the way React recommends on the client.
-function iconMarkup(agentType: string): string {
+function svgImageUrl(markup: string): string {
+  // Why: an SVG loaded as an image needs its namespace, and has no CSS color for currentColor.
+  const namespaced = markup.includes('xmlns=')
+    ? markup
+    : markup.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
+  const inked = namespaced.replace('<svg', `<svg color="${ICON_INK}"`)
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(inked)}`
+}
+
+// Why: Orca's own agent icons, rendered the way React recommends on the client: most are an SVG,
+// the rest a favicon <img> whose file loads as it is.
+function iconUrl(agentType: string): string | null {
   const host = document.createElement('div')
   const root = createRoot(host)
   flushSync(() => root.render(createElement(AgentTypeIcon, { agentType, size: ICON_PX })))
-  const markup = host.innerHTML
+  const icon = host.firstElementChild
+  const url =
+    icon instanceof HTMLImageElement
+      ? icon.getAttribute('src')
+      : icon instanceof SVGSVGElement
+        ? svgImageUrl(icon.outerHTML)
+        : null
   root.unmount()
-  return markup.replace('<svg', `<svg color="${ICON_INK}"`)
+  return url
 }
 
 function loadIcon(agentType: string): void {
   icons.set(agentType, 'loading')
   // Why: the frame loop may ask mid-render elsewhere; flushSync needs its own task.
   window.setTimeout(() => {
+    const url = iconUrl(agentType)
+    if (!url) {
+      icons.set(agentType, 'failed')
+      return
+    }
     const image = new Image()
-    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(iconMarkup(agentType))}`
+    image.src = url
     image.decode().then(
       () => {
         icons.set(agentType, image)
