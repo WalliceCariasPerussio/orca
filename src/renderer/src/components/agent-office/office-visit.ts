@@ -16,7 +16,7 @@ export type VisitHost = {
   open: (agentKey: string) => void
 }
 
-/** Takes you to an agent: the elevator to its floor if needed, up beside its chair, then its window. */
+/** Takes you to an agent that needs you: the elevator to its floor if needed, up beside its chair, then its window. */
 export class AgentVisit {
   private visiting: { key: string; walking: boolean } | null = null
 
@@ -51,7 +51,8 @@ export class AgentVisit {
       return
     }
     this.visiting = null
-    if (agent?.floorId === this.host.floorId()) {
+    // Why: if someone answered it meanwhile, you arrive beside it without a window popping up.
+    if (agent?.floorId === this.host.floorId() && agent.bucket === 'attention') {
       this.host.open(agent.key)
     }
   }
