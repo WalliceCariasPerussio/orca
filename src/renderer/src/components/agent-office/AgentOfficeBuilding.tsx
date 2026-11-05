@@ -56,7 +56,18 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const freshAgents = officeAgentsFrom(snapshot.cards, staffPets)
   // Why: the snapshot rebuilds on every status tick; reseat the floor only when what it shows changes.
   const agentsKey = freshAgents
-    .map((a) => `${a.key}:${a.floorId}:${a.bucket}:${a.petId}:${a.name}:${a.agentType}`)
+    .map((a) =>
+      [
+        a.key,
+        a.floorId,
+        a.bucket,
+        a.petId,
+        a.name,
+        a.agentType,
+        a.parentKey ?? '',
+        ...a.subagents.map((s) => `${s.key}=${s.bucket}=${s.name}`)
+      ].join(':')
+    )
     .join('|')
   // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the visible fields above
   const dressedByKind = useMemo(() => freshAgents, [agentsKey])
@@ -113,11 +124,11 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         }
       },
       onFloorChange: (floor) => setFloorId(floor.id),
-      onAgentClick: (agent) => {
+      onAgentClick: (paneKey) => {
         setHovered(null)
         // Why: the window hands focus back to what held it on open, so the arrows walk again after closing.
         canvas.focus({ preventScroll: true })
-        openAgentWindow(agent.key)
+        openAgentWindow(paneKey)
       },
       onSpotClick: (spot) => {
         if (spot === 'reception') {

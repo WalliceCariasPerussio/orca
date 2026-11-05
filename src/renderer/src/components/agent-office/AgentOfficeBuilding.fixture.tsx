@@ -38,8 +38,35 @@ function fakeAgents(): OfficeAgent[] {
     bucket,
     petId: DEFAULT_STAFF_PETS[roleForAgentType(agentType)],
     startedAt: i,
-    reveal: { repoId: 'mesa', worktreeId: 'w', tabId: 't', leafId: null }
+    subagents: []
   }))
+}
+
+/** Two desks with sub-agents: one with two in its terminal, one with a spawned Codex and four more. */
+function crewAgents(): OfficeAgent[] {
+  const [first, second, ...rest] = fakeAgents().slice(0, 4)
+  const inside = (parent: OfficeAgent, count: number): OfficeAgent['subagents'] =>
+    Array.from({ length: count }, (_, i) => ({
+      key: `${parent.key}/sub-${i}`,
+      name: `Explore ${i + 1}`,
+      bucket: i === 1 && count === 2 ? 'attention' : 'working'
+    }))
+  const spawned: OfficeAgent = {
+    ...second,
+    key: 'pane-spawned',
+    name: 'codex worker',
+    agentType: 'codex',
+    bucket: 'working',
+    petId: GREMLIN_PET_ID,
+    startedAt: 10,
+    parentKey: second.key
+  }
+  return [
+    { ...first, subagents: inside(first, 2) },
+    { ...second, subagents: inside(second, 4) },
+    ...rest,
+    spawned
+  ]
 }
 
 /** The same agents with every bundled pet on the floor's team, so pets no longer follow the kind. */
@@ -86,6 +113,16 @@ export const teamFloor = defineFixture({
   width: 960,
   store: { repos },
   render: () => <StaffedFloor agents={teamAgents()} />,
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+})
+
+export const subagents = defineFixture({
+  width: 960,
+  store: { repos },
+  render: () => <StaffedFloor agents={crewAgents()} />,
   interact: async (frame) => {
     await waitFor(frame, 'canvas[data-ready]')
     await new Promise((resolve) => setTimeout(resolve, 500))

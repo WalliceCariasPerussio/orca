@@ -1,16 +1,16 @@
 import { onBadgeReady } from './office-agent-badges'
 import type { OfficeAgent } from './office-agents'
 import { drawBuildingFrame } from './office-building-frame'
-import {
-  deskAgentAt,
-  deskAgentDrawables,
-  seatAgents,
-  seatTileKeys,
-  type DeskAgent
-} from './office-desk-agents'
 import { isElevatorTile } from './office-elevator'
 import { ElevatorTrip } from './office-elevator-trip'
-import { FIGURE_HEIGHT } from './office-figures'
+import {
+  EMPTY_STAFF,
+  staffAt,
+  staffDrawables,
+  staffFloor,
+  staffTiles,
+  type FloorStaff
+} from './office-floor-staff'
 import { layoutForFloor, rememberFloorId, type OfficeFloor } from './office-floors'
 import { FrameLoop, type FrameResult } from './office-frame-loop'
 import { frameAt, type PetSprite } from './office-pet-sprite'
@@ -50,7 +50,8 @@ export type OfficeBuildingSetup = {
   teamBoardLabel: string
   onPanelChange: (open: boolean) => void
   onFloorChange: (floor: OfficeFloor) => void
-  onAgentClick: (agent: OfficeAgent) => void
+  /** Opens the window of this pane's agent; a sub-agent without a terminal opens its parent's. */
+  onAgentClick: (paneKey: string) => void
   /** You clicked the receptionist or a floor's team board, and are walking up to it. */
   onSpotClick: (spot: OfficeSpotId) => void
 }
@@ -70,7 +71,7 @@ export class OfficeBuilding {
   private avatar: PetSprite
   private readonly trip: ElevatorTrip
   private agents: OfficeAgent[] = []
-  private staff: DeskAgent[] = []
+  private staff: FloorStaff = EMPTY_STAFF
   private staffSprites: ReadonlyMap<string, PetSprite>
 
   private animation: Animation = 'idle'
@@ -147,9 +148,9 @@ export class OfficeBuilding {
       return
     }
     const world = worldAtCss(this.projection, cssX, cssY)
-    const clicked = deskAgentAt(this.staff, world)
+    const clicked = staffAt(this.staff, world)
     if (clicked) {
-      this.setup.onAgentClick(clicked.agent)
+      this.setup.onAgentClick(clicked.opens)
       return
     }
     const spot = spotAt(this.floor.number === 0, world)
@@ -171,10 +172,9 @@ export class OfficeBuilding {
       return null
     }
     const world = worldAtCss(this.projection, cssX, cssY)
-    const found = deskAgentAt(this.staff, world)
+    const found = staffAt(this.staff, world)
     if (found) {
-      const { feet } = found.seat
-      const at = cssAtWorld(this.projection, feet.x, feet.y - FIGURE_HEIGHT - 14)
+      const at = cssAtWorld(this.projection, found.tip.x, found.tip.y)
       return { kind: 'agent', agent: found.agent, ...at }
     }
     const spot = spotAt(this.floor.number === 0, world)
@@ -238,13 +238,12 @@ export class OfficeBuilding {
     if (floor.number === 0) {
       return buildOfficeScene(layoutForFloor(floor, 0), RECEPTIONIST_BLOCKED)
     }
-    const onFloor = this.agents.filter((agent) => agent.floorId === floor.id)
-    this.staff = seatAgents(onFloor, this.staffSprites)
-    return buildOfficeScene(layoutForFloor(floor, onFloor.length), seatTileKeys(this.staff))
+    this.staff = staffFloor(this.agents, floor.id, this.staffSprites)
+    return buildOfficeScene(layoutForFloor(floor, this.staff.deskCount), staffTiles(this.staff))
   }
 
   private seatStaff(): void {
-    this.staff = []
+    this.staff = EMPTY_STAFF
     this.scene = this.sceneFor(this.floor)
     if (this.projection) {
       const ratio = this.projection.devicePixelRatio
@@ -306,7 +305,7 @@ export class OfficeBuilding {
     const you = frameAt(this.avatar[animation], now - this.animationStart)
     const receptionist = this.floor.number === 0 ? this.setup.receptionist : null
     const atDesk = receptionist ? frameAt(receptionist.idle, now) : null
-    const staff = deskAgentDrawables(this.staff, now, this.projection)
+    const staff = staffDrawables(this.staff, now, this.projection)
     drawBuildingFrame(context, {
       scene: this.scene,
       projection: this.projection,

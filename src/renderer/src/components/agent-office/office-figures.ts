@@ -12,6 +12,8 @@ type FigureOptions = {
   zY: number
   projection: OfficeProjection
   clip?: (context: CanvasRenderingContext2D) => void
+  /** World pixels tall; sub-agents stand smaller than a person. */
+  height?: number
 }
 
 /** A pet drawn with its feet on `feet`, sorted with the room at `zY`. */
@@ -21,11 +23,12 @@ export function figureDrawable({
   feet,
   zY,
   projection,
-  clip
+  clip,
+  height = FIGURE_HEIGHT
 }: FigureOptions): DepthDrawable {
   const { figure } = sprite
   const { offsetX, offsetY, zoom } = projection
-  const scale = FIGURE_HEIGHT / figure.height
+  const scale = height / figure.height
   const x = offsetX + (feet.x - (figure.x + figure.width / 2) * scale) * zoom
   const y = offsetY + (feet.y - (figure.y + figure.height) * scale) * zoom
   return {

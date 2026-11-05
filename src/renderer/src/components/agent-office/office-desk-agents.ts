@@ -12,10 +12,11 @@ import { getCachedSprite } from './vendor/pixel-agents/webview-ui/src/office/spr
 export type DeskAgent = { agent: OfficeAgent; seat: DeskSeat; sprite: PetSprite }
 
 const BOB_MS = 450
-const BUBBLE_HALF_WIDTH = 5
+export const BUBBLE_HALF_WIDTH = 5
 const BUBBLE_WIDTH = 11
-const BUBBLE_HEIGHT = 13
-const BUBBLE_Z = 10_000
+export const BUBBLE_HEIGHT = 13
+/** Bubbles draw over everything in the room. */
+export const BUBBLE_Z = 10_000
 const STAGGER_MS = 137
 const HIT_HALF_WIDTH = 9
 

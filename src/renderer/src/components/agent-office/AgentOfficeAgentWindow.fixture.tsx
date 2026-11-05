@@ -96,7 +96,12 @@ export const agentWindow = defineFixture({
     agentStatusByPaneKey: { [entry.paneKey]: entry },
     agentStatusEpoch: 1
   },
-  setup: () => localStorage.setItem(FLOOR_KEY, repo.id),
+  setup: () => {
+    localStorage.setItem(FLOOR_KEY, repo.id)
+    // Why: other scenes save a team for this floor in the same browser; this one shows the kind's pet.
+    localStorage.removeItem('orca.agentOffice.floorTeams')
+    localStorage.removeItem('orca.agentOffice.agentPets')
+  },
   render: () => (
     <div className="flex flex-col" style={{ height: 600 }}>
       <AgentOfficeBuilding />

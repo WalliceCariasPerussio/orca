@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { BUNDLED_PETS } from '../pet/pet-models'
 import type { OfficeAgent } from './office-agents'
 import type { FloorTeams } from './office-floor-teams'
 
@@ -59,7 +60,10 @@ function toss(key: string, sides: number): number {
   return (hash >>> 0) % sides
 }
 
-/** Agents on a floor with a team keep the team pet they had, or draw one of the least-used ones. */
+/**
+ * Agents on a floor with a team keep the team pet they had, or draw one of the least-used ones.
+ * A spawned agent never draws its parent's pet; with no other pet on the team it is left undrawn.
+ */
 export function drawTeamPets(
   agents: readonly OfficeAgent[],
   teams: FloorTeams,
@@ -67,30 +71,52 @@ export function drawTeamPets(
 ): Map<string, string> {
   const drawn = new Map<string, string>()
   for (const [floorId, team] of Object.entries(teams)) {
-    if (team.length === 0) {
-      continue
-    }
     const onFloor = agents.filter((agent) => agent.floorId === floorId)
     const uses = new Map(team.map((petId) => [petId, 0]))
+    const allowed = (agent: OfficeAgent): string[] => {
+      const parentPet = agent.parentKey ? drawn.get(agent.parentKey) : undefined
+      return team.filter((petId) => petId !== parentPet)
+    }
     const keep = (key: string, petId: string): void => {
       drawn.set(key, petId)
       uses.set(petId, (uses.get(petId) ?? 0) + 1)
     }
-    const newcomers = onFloor.filter((agent) => {
-      const had = memory.get(agent.key)
-      if (had !== undefined && uses.has(had)) {
-        keep(agent.key, had)
-        return false
+    const drawGroup = (group: readonly OfficeAgent[]): void => {
+      const newcomers = group.filter((agent) => {
+        const had = memory.get(agent.key)
+        if (had !== undefined && allowed(agent).includes(had)) {
+          keep(agent.key, had)
+          return false
+        }
+        return true
+      })
+      for (const agent of newcomers) {
+        const pool = allowed(agent)
+        const fewest = Math.min(...pool.map((petId) => uses.get(petId) ?? 0))
+        const free = pool.filter((petId) => uses.get(petId) === fewest)
+        if (free.length > 0) {
+          keep(agent.key, free[toss(agent.key, free.length)])
+        }
       }
-      return true
-    })
-    for (const agent of newcomers) {
-      const fewest = Math.min(...uses.values())
-      const free = team.filter((petId) => uses.get(petId) === fewest)
-      keep(agent.key, free[toss(agent.key, free.length)])
     }
+    // Why: parents draw first, so the agents they spawned can steer clear of their pets.
+    drawGroup(onFloor.filter((agent) => !agent.parentKey))
+    drawGroup(onFloor.filter((agent) => agent.parentKey))
   }
   return drawn
+}
+
+// Why: with no team pet left, a spawned agent wears its kind's pet, or another of Orca's if that matches too.
+function apartFromParents(agents: readonly OfficeAgent[]): OfficeAgent[] {
+  const petOf = new Map(agents.map((agent) => [agent.key, agent.petId]))
+  return agents.map((agent) => {
+    const parentPet = agent.parentKey ? petOf.get(agent.parentKey) : undefined
+    if (parentPet === undefined || agent.petId !== parentPet) {
+      return agent
+    }
+    const others = BUNDLED_PETS.map((pet) => pet.id).filter((petId) => petId !== parentPet)
+    return others.length > 0 ? { ...agent, petId: others[toss(agent.key, others.length)] } : agent
+  })
 }
 
 /** Dresses agents on team floors in their drawn pets and remembers each draw on this computer. */
@@ -99,10 +125,12 @@ export function useTeamPets(agents: OfficeAgent[], teams: FloorTeams): OfficeAge
   useEffect(() => rememberDraw(drawn), [drawn])
   return useMemo(
     () =>
-      agents.map((agent) => {
-        const petId = drawn.get(agent.key)
-        return petId && petId !== agent.petId ? { ...agent, petId } : agent
-      }),
+      apartFromParents(
+        agents.map((agent) => {
+          const petId = drawn.get(agent.key)
+          return petId && petId !== agent.petId ? { ...agent, petId } : agent
+        })
+      ),
     [agents, drawn]
   )
 }
