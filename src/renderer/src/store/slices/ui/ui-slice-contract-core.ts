@@ -123,6 +123,7 @@ export type UiViewHistory =
   | 'skills'
   | 'artifacts'
   | 'mobile'
+  | 'office'
 
 export type UISliceCore = {
   sidebarOpen: boolean
@@ -163,6 +164,7 @@ export type UISliceCore = {
   previousViewBeforeSkills: Exclude<UiViewHistory, 'skills'>
   previousViewBeforeMobile: Exclude<UiViewHistory, 'mobile'>
   previousViewBeforeArtifacts: Exclude<UiViewHistory, 'artifacts'>
+  previousViewBeforeAgentOffice: Exclude<UiViewHistory, 'office'>
   setActiveView: (view: UISliceCore['activeView']) => void
   taskPageData: TaskPageData
   taskResumeState: TaskResumeState | undefined
@@ -179,6 +181,8 @@ export type UISliceCore = {
   closeTaskPage: () => void
   openActivityPage: () => void
   closeActivityPage: () => void
+  openAgentOfficePage: () => void
+  closeAgentOfficePage: () => void
   selectedAutomationId: string | null
   setSelectedAutomationId: (id: string | null) => void
   pendingAutomationRunNavigation: {

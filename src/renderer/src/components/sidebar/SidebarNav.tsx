@@ -47,6 +47,9 @@ export function shouldShowAgentDashboardButton(
 }
 
 const AgentDashboardSidebarEntry = lazyWithRetry(() => import('./AgentDashboardSidebarEntry'))
+const AgentOfficeSidebarEntry = lazyWithRetry(
+  () => import('../agent-office/AgentOfficeSidebarEntry')
+)
 
 const SidebarNav = React.memo(function SidebarNav() {
   // Subscribe across this memo boundary; translate still handles pseudo-localization.
@@ -60,6 +63,7 @@ const SidebarNav = React.memo(function SidebarNav() {
   const updateSettings = useAppStore((s) => s.updateSettings)
   const activeView = useAppStore((s) => s.activeView)
   const showAgentDashboardButton = useAppStore((s) => shouldShowAgentDashboardButton(s.settings))
+  const showAgentOfficeButton = useAppStore((s) => s.settings?.experimentalAgentOffice === true)
   const showAutomationsButton = useAppStore((s) => shouldShowAutomationsButton(s.settings))
   const showMobileButton = useAppStore((s) => shouldShowMobileButton(s.settings))
   const showArtifactsButton = useAppStore((s) => shouldShowArtifactsButton(s.settings))
@@ -208,6 +212,11 @@ const SidebarNav = React.memo(function SidebarNav() {
       {showAgentDashboardButton ? (
         <React.Suspense fallback={null}>
           <AgentDashboardSidebarEntry />
+        </React.Suspense>
+      ) : null}
+      {showAgentOfficeButton ? (
+        <React.Suspense fallback={null}>
+          <AgentOfficeSidebarEntry />
         </React.Suspense>
       ) : null}
       {showMobileButton ? (

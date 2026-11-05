@@ -9,6 +9,7 @@ import { HiddenExperimentalGroup } from './HiddenExperimentalGroup'
 import { NumberField, SettingsSwitch } from '../form-controls/SettingsFormControls'
 import { translate } from '@/i18n/i18n'
 import { AgentDashboardExperimentalSetting } from '../../dashboard/AgentDashboardExperimentalSetting'
+import { AgentOfficeExperimentalSetting } from '../../agent-office/AgentOfficeExperimentalSetting'
 import { EphemeralVmsExperimentalSetting } from '../virtual-machines/recipes/EphemeralVmsExperimentalSetting'
 import { BrowserExtensionsExperimentalSetting } from '../browser/extensions/BrowserExtensionsExperimentalSetting'
 import { WslHostsExperimentalSetting } from '../wsl/hosts/WslHostsExperimentalSetting'
@@ -59,6 +60,8 @@ export function ExperimentalPane({
       {showAgentDashboard ? (
         <AgentDashboardExperimentalSetting settings={settings} updateSettings={updateSettings} />
       ) : null}
+
+      <AgentOfficeExperimentalSetting settings={settings} updateSettings={updateSettings} />
 
       {showPet ? (
         <SearchableSetting

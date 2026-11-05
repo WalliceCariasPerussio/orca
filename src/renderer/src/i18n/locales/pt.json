@@ -19940,6 +19940,25 @@
           "add": "Adicionar catálogo",
           "body": "Um link pediu para mostrar {{value0}} deste catálogo. Adicione catálogos apenas de pessoas em quem você confia."
         }
+      },
+      "agentOffice": {
+        "experimental": {
+          "title": "Escritório de Agentes",
+          "description": "Página de escritório em que cada agente aparece como uma pessoa trabalhando.",
+          "keywordOffice": "escritório",
+          "keywordAgents": "agentes",
+          "keyword3d": "3d",
+          "copy": "Adiciona uma entrada Escritório de Agentes à barra lateral esquerda. O escritório mostra cada agente como uma pessoa trabalhando. Protótipo inicial.",
+          "toggleLabel": "Ativar ou desativar o Escritório de Agentes"
+        },
+        "page": {
+          "back": "Voltar",
+          "title": "Escritório de Agentes",
+          "placeholder": "Cada agente vai aparecer aqui como uma pessoa trabalhando. Esta página está em construção."
+        },
+        "sidebar": {
+          "label": "Escritório de Agentes"
+        }
       }
     },
     "startup": {

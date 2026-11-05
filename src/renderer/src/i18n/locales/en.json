@@ -19339,6 +19339,25 @@
           "detail": "From its shortcut, the palette and menus. If the plugin fails, Orca’s own runs.",
           "switch": "Use {{value0}} instead of Orca’s {{value1}}"
         }
+      },
+      "agentOffice": {
+        "experimental": {
+          "title": "Agent Office",
+          "description": "Office page where each agent shows up as a person at work.",
+          "keywordOffice": "office",
+          "keywordAgents": "agents",
+          "keyword3d": "3d",
+          "copy": "Adds an Agent Office entry to the left sidebar. The office shows each agent as a person at work. Early prototype.",
+          "toggleLabel": "Toggle Agent Office"
+        },
+        "page": {
+          "back": "Back",
+          "title": "Agent Office",
+          "placeholder": "Each agent will show up here as a person at work. This page is under construction."
+        },
+        "sidebar": {
+          "label": "Agent Office"
+        }
       }
     },
     "i18n": {

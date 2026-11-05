@@ -6,6 +6,7 @@ import { getNewWorktreeCardStyleSearchEntry } from './new-worktree-card-style-se
 import { getEphemeralVmsSearchEntry } from '../virtual-machines/recipes/ephemeral-vms-search'
 import { getBrowserExtensionsExperimentalSearchEntry } from '../browser/extensions/browser-extensions-experimental-search'
 import { getWslHostsExperimentalSearchEntry } from '../wsl/hosts/wsl-hosts-experimental-search'
+import { getAgentOfficeExperimentalSearchEntry } from '../../agent-office/agent-office-experimental-search'
 
 export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
   (): SettingsSearchEntry[] => [
@@ -180,6 +181,7 @@ export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
       ]
     },
     getNewWorktreeCardStyleSearchEntry(),
+    getAgentOfficeExperimentalSearchEntry(),
     getEphemeralVmsSearchEntry(),
     getBrowserExtensionsExperimentalSearchEntry(),
     // Index WSL toggles only on Windows desktops that expose them.
