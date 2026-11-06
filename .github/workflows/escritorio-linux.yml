@@ -1,0 +1,106 @@
+# Fork only (WalliceCariasPerussio/orca): builds the Linux installer (AppImage + .deb, x64) of Orca with the
+# Escritório and publishes it as a release of this fork. Manual: Actions → "Escritório: instalador Linux" → Run workflow.
+# The branch must sit exactly on an official tag (merge of vX.Y.Z), because the orcad template comes from that release.
+name: 'Escritório: instalador Linux'
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: 'Tag oficial juntada na branch (ex.: v1.4.251)'
+        required: true
+      build_number:
+        description: 'Número desta build sobre a mesma tag (1, 2, 3...)'
+        required: true
+        default: '1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: escritorio-linux
+  cancel-in-progress: false
+
+jobs:
+  linux-x64:
+    if: github.repository == 'WalliceCariasPerussio/orca'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      UPSTREAM_TAG: ${{ inputs.upstream_tag }}
+      RELEASE_TAG: escritorio-${{ inputs.upstream_tag }}-${{ inputs.build_number }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Versão do package.json bate com a tag
+        run: |
+          v=$(node -p "require('./package.json').version")
+          [ "v$v" = "$UPSTREAM_TAG" ] || { echo "::error::package.json é $v, mas a tag é $UPSTREAM_TAG"; exit 1; }
+
+      - uses: pnpm/setup@v2
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+
+      # Same as upstream: pnpm's bundled node-gyp is not executable on Linux.
+      - name: node-gyp externo
+        run: |
+          npm install -g node-gyp@11.5.0
+          echo "npm_config_node_gyp=$(npm root -g)/node-gyp/bin/node-gyp.js" >> "$GITHUB_ENV"
+
+      - name: Dependências
+        run: pnpm install --frozen-lockfile
+
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: Dependências do computer-use no Linux
+        run: sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool
+
+      - name: Build
+        run: pnpm run build:release
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          # Update feeds point at stablyai/orca; without this the app would offer the official release.
+          ORCA_DISABLE_APP_UPDATES: '1'
+
+      - name: Atualização automática ficou desligada no bundle
+        run: |
+          if grep -rq "ORCA_APP_UPDATES_DISABLED" out/main; then
+            echo "::error::ORCA_APP_UPDATES_DISABLED não foi substituído no out/main"
+            exit 1
+          fi
+
+      # The orcad template (server for SSH/WSL hosts) comes from the official .deb of the same version.
+      - name: Template do orcad do release oficial
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "$UPSTREAM_TAG" -R stablyai/orca -p 'orca-ide_*_amd64.deb' -D "$RUNNER_TEMP/oficial"
+          dpkg-deb -x "$RUNNER_TEMP"/oficial/*.deb "$RUNNER_TEMP/oficial/x"
+          tpl=$(find "$RUNNER_TEMP/oficial/x" -type d -path '*/resources/orcad-template' | head -1)
+          [ -n "$tpl" ] || { echo "::error::orcad-template não encontrado no .deb oficial"; exit 1; }
+          rm -rf out/orcad-template
+          cp -r "$tpl" out/orcad-template
+
+      - name: Empacotar
+        run: |
+          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
+          pnpm exec electron-builder --config config/electron-builder.config.cjs --linux AppImage deb --x64 --publish never
+        env:
+          ORCA_REQUIRE_ORCAD_TEMPLATE: '1'
+
+      - name: Release no fork
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ls -la dist/*.AppImage dist/*.deb
+          gh release create "$RELEASE_TAG" dist/orca-linux.AppImage dist/*.deb \
+            --target "$GITHUB_SHA" \
+            --title "Orca com Escritório — $UPSTREAM_TAG (build ${{ inputs.build_number }})" \
+            --notes "Orca $UPSTREAM_TAG com o Escritório de Agentes (branch \`${GITHUB_REF_NAME}\`, commit \`$GITHUB_SHA\`). Sem atualização automática: a próxima versão sai aqui nos releases."
