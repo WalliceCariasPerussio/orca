@@ -1,5 +1,6 @@
 import { translate } from '@/i18n/i18n'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
+import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
 import type { DashboardBucket, DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import { isNapping, type OfficeAgent } from './office-agents'
 import type { OfficeHover } from './office-building-setup'
@@ -61,11 +62,17 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
 /** The label over whatever the pointer rests on: an agent, the team board or a free desk. */
 export default function OfficeHoverTip({
   hover,
-  thought
+  thought,
+  model,
+  asked
 }: {
   hover: OfficeHover
   /** What the agent under the pointer thinks, in full. */
   thought?: string
+  /** The provider model its session uses, as the Agent Dashboard shows it. */
+  model?: string
+  /** What you last asked it. */
+  asked?: string
 }): React.JSX.Element {
   return (
     <div
@@ -75,6 +82,9 @@ export default function OfficeHoverTip({
       {hover.kind === 'agent' ? (
         <>
           <p className="truncate font-medium">{hover.agent.name}</p>
+          <p className="truncate text-muted-foreground">
+            {[formatAgentTypeLabel(hover.agent.agentType), model].filter(Boolean).join(' · ')}
+          </p>
           <p className="truncate text-muted-foreground">
             {translate('auto.components.agentOffice.building.workspace', 'Workspace: {{value0}}', {
               value0: hover.agent.worktreeName
@@ -97,6 +107,14 @@ export default function OfficeHoverTip({
               'click to open the terminal'
             )}
           </p>
+          {asked ? (
+            <p className="mt-1 line-clamp-2 border-t border-border pt-1">
+              <span className="font-medium text-muted-foreground">
+                {translate('dashboardPopout.card.you', 'You')}
+              </span>{' '}
+              {asked}
+            </p>
+          ) : null}
           {thought ? (
             <p className="mt-1 line-clamp-3 border-t border-border pt-1 italic">{thought}</p>
           ) : null}

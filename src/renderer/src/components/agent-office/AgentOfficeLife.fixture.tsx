@@ -139,16 +139,18 @@ export const remoteHosts = defineFixture({
 export const remoteHostTip = defineFixture({
   width: 700,
   render: () => (
-    <div className="relative h-40">
+    <div className="relative h-56">
       <OfficeHoverTip
         hover={{
           kind: 'agent',
           agent: { ...fakeAgents()[4], remoteHost: 'SSH host · build-box' },
           seenAt: NOW,
           left: 350,
-          top: 130
+          top: 200
         }}
         thought="Rodando pnpm test"
+        model="gpt-5.5-codex"
+        asked="Roda os testes do cache e me fala se algum quebrou depois da mudança no TTL."
       />
     </div>
   )

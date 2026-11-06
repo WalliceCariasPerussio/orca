@@ -216,6 +216,8 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   }, [thoughts])
 
   const currentFloor = floors.find((f) => f.id === floorId) ?? floors[0]
+  const hoveredKey = hovered?.kind === 'agent' ? hovered.agent.key : null
+  const hoveredCard = hoveredKey ? snapshot.cards.find((c) => c.paneKey === hoveredKey) : undefined
   return (
     <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden">
       <canvas
@@ -254,7 +256,9 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       {hovered ? (
         <OfficeHoverTip
           hover={hovered}
-          thought={hovered.kind === 'agent' ? thoughts.get(hovered.agent.key) : undefined}
+          thought={hoveredKey ? thoughts.get(hoveredKey) : undefined}
+          model={hoveredKey ? statusByPaneKey[hoveredKey]?.model : undefined}
+          asked={hoveredCard?.lastUserMessage}
         />
       ) : null}
       {cast ? (
