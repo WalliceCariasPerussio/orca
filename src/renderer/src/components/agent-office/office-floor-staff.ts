@@ -62,6 +62,7 @@ export function staffFloor(
   const plaques = [
     ...desks.map(({ agent, seat }) => ({
       desk: seat.desk,
+      worktreeId: agent.worktreeId,
       label: agent.worktreeName,
       color: sectorColor(agent.worktreeId),
       review: agent.review,

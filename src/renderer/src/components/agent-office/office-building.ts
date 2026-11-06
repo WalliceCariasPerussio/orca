@@ -4,11 +4,12 @@ import { drawBuildingFrame } from './office-building-frame'
 import type { OfficeBuildingSetup, OfficeHover } from './office-building-setup'
 import { isElevatorTile } from './office-elevator'
 import { ElevatorTrip } from './office-elevator-trip'
-import { FloorCrew } from './office-floor-crew'
+import { FloorCrew, type OfficeTarget } from './office-floor-crew'
 import { floorSignIcon } from './office-floor-icons'
 import { callingFloor, rememberFloorId, type OfficeFloor } from './office-floors'
 import { FrameLoop, type FrameResult } from './office-frame-loop'
 import { frameAt, type PetSprite } from './office-pet-sprite'
+import { hoverOf, sectorOf } from './office-pointer-targets'
 import { ELEVATOR_FRONT_TILE } from './office-room-grid'
 import {
   cssAtWorld,
@@ -137,40 +138,31 @@ export class OfficeBuilding {
       return
     }
     this.visits.cancel()
-    const world = worldAtCss(this.projection, cssX, cssY)
-    const clicked = this.crew.agentAt(world)
-    if (clicked) {
-      this.setup.onAgentClick(clicked.opens)
-      return
-    }
-    const spot = this.crew.spotAt(this.floor.number === 0, world)
-    if (spot) {
-      this.walkAlong(this.pathTo(spot.front))
-      this.setup.onSpotClick(spot.id)
-      return
-    }
-    const tile = tileAtCss(this.projection, cssX, cssY)
-    if (isElevatorTile(tile.col, tile.row)) {
-      this.callElevator()
+    const target = this.targetAt(cssX, cssY)
+    if (target?.kind === 'agent') {
+      this.setup.onAgentClick(target.hit.opens)
+    } else if (target?.kind === 'sector') {
+      this.setup.onSectorClick(target.worktreeId, { left: cssX, top: cssY })
+    } else if (target?.kind === 'spot') {
+      this.walkAlong(this.pathTo(target.spot.front))
+      this.setup.onSpotClick(target.spot.id)
     } else {
-      this.walkAlong(this.pathTo(tile))
+      const tile = tileAtCss(this.projection, cssX, cssY)
+      if (isElevatorTile(tile.col, tile.row)) {
+        this.callElevator()
+      } else {
+        this.walkAlong(this.pathTo(tile))
+      }
     }
   }
 
   hover(cssX: number, cssY: number): OfficeHover | null {
-    if (!this.projection) {
-      return null
-    }
-    const world = worldAtCss(this.projection, cssX, cssY)
-    const found = this.crew.agentAt(world)
-    if (found) {
-      const at = cssAtWorld(this.projection, found.tip.x, found.tip.y)
-      return { kind: 'agent', agent: found.agent, seenAt: Date.now(), ...at }
-    }
-    const spot = this.crew.spotAt(this.floor.number === 0, world)
-    return spot?.tip
-      ? { kind: 'spot', spot: spot.id, ...cssAtWorld(this.projection, spot.tip.x, spot.tip.y) }
-      : null
+    return this.projection ? hoverOf(this.targetAt(cssX, cssY), this.projection) : null
+  }
+
+  /** The workspace of the agent or plaque under a point, for its right-click menu. */
+  sectorAt(cssX: number, cssY: number): string | null {
+    return sectorOf(this.targetAt(cssX, cssY))
   }
 
   /** CSS point in front of the reception counter, where its menu opens. */
@@ -253,6 +245,14 @@ export class OfficeBuilding {
     Object.assign(this.walker, createWalker(ELEVATOR_FRONT_TILE))
     this.enterFloor(lobby)
     this.trip.showFloor(lobby)
+  }
+
+  private targetAt(cssX: number, cssY: number): OfficeTarget | null {
+    if (!this.projection) {
+      return null
+    }
+    const world = worldAtCss(this.projection, cssX, cssY)
+    return this.crew.targetAt(this.floor.number === 0, world)
   }
 
   private pathTo(tile: TilePoint): TilePoint[] {

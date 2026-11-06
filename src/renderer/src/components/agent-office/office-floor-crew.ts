@@ -17,6 +17,7 @@ import {
 import { layoutForFloor, type OfficeFloor } from './office-floors'
 import type { PetSprite } from './office-pet-sprite'
 import { Roaming } from './office-roaming'
+import { plaqueAt, plaqueTip } from './office-sectors'
 import {
   buildOfficeScene,
   type DepthDrawable,
@@ -29,6 +30,12 @@ import { sameThoughts, type OfficeThoughts } from './office-thoughts'
 import type { TilePoint, WorldPoint } from './office-walker'
 import { RECEPTIONIST_BLOCKED } from './reception-layout'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
+
+/** What a point on the floor lands on: an agent, a workspace's plaque, or a spot you walk up to. */
+export type OfficeTarget =
+  | { kind: 'agent'; hit: StaffHit }
+  | { kind: 'sector'; worktreeId: string; worktreeName: string; tip: WorldPoint }
+  | { kind: 'spot'; spot: SpotHit }
 
 /** Agents held at their desk because their sub-agents stand there with them. */
 function pinnedKeys(agents: readonly OfficeAgent[]): Set<string> {
@@ -103,19 +110,25 @@ export class FloorCrew {
     return this.cheers.active(now) || walking || leaving
   }
 
-  agentAt(world: WorldPoint): StaffHit | null {
-    return staffAt(this.staff, world, (desk) => this.roaming.stance(desk))
-  }
-
   /** The tile beside an agent's chair, where you stand to look over its shoulder. */
   deskSide(agentKey: string): TilePoint | null {
     const desk = this.staff.desks.find(({ agent }) => agent.key === agentKey)
     return desk ? { col: desk.seat.tile.col - 1, row: desk.seat.tile.row } : null
   }
 
-  /** Something to click and walk up to: the receptionist, the team board or a free desk. */
-  spotAt(inLobby: boolean, world: WorldPoint): SpotHit | null {
-    return spotAt(inLobby, world) ?? freeDeskAt(this.staff, world)
+  /** Agents win over the plaques they stand behind; spots are the receptionist, team board and free desks. */
+  targetAt(inLobby: boolean, world: WorldPoint): OfficeTarget | null {
+    const hit = staffAt(this.staff, world, (desk) => this.roaming.stance(desk))
+    if (hit) {
+      return { kind: 'agent', hit }
+    }
+    const plaque = plaqueAt(this.staff.plaques, world)
+    if (plaque?.worktreeId) {
+      const { worktreeId, label: worktreeName } = plaque
+      return { kind: 'sector', worktreeId, worktreeName, tip: plaqueTip(plaque) }
+    }
+    const spot = spotAt(inLobby, world) ?? freeDeskAt(this.staff, world)
+    return spot ? { kind: 'spot', spot } : null
   }
 
   drawables(

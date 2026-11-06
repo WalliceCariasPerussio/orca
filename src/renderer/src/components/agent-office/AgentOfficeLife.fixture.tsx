@@ -175,3 +175,12 @@ export const workspaceStatuses = defineFixture({
   ),
   interact: (frame) => waitFor(frame, 'canvas[data-ready]')
 })
+
+export const sectorTip = defineFixture({
+  width: 700,
+  render: () => (
+    <div className="relative h-32">
+      <OfficeHoverTip hover={{ kind: 'sector', worktreeName: 'fix/cache', left: 350, top: 100 }} />
+    </div>
+  )
+})

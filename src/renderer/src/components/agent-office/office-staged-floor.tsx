@@ -100,7 +100,8 @@ export function StaffedFloor({
       onPanelChange: () => {},
       onFloorChange: () => {},
       onAgentClick: () => {},
-      onSpotClick: () => {}
+      onSpotClick: () => {},
+      onSectorClick: () => {}
     })
     building.setAgents(agents)
     building.setThoughts(thoughts ?? new Map())

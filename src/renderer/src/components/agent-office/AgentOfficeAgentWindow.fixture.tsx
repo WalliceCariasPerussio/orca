@@ -71,20 +71,29 @@ async function waitFor(frame: HTMLElement, selector: string): Promise<void> {
   }
 }
 
-// Why: mirror the office's integer-zoom centering to click the agent at the first desk.
-function clickFirstDesk(canvas: HTMLCanvasElement): void {
+// Why: mirror the office's integer-zoom centering to click a world point of the room.
+function clickRoom(canvas: HTMLCanvasElement, x: number, y: number): void {
   const box = canvas.getBoundingClientRect()
   const roomWidth = ROOM_COLS * TILE_SIZE
   const roomHeight = ROOM_ROWS * TILE_SIZE
   const zoom = Math.floor(Math.min(box.width / roomWidth, box.height / roomHeight))
-  const { feet } = deskSeats(1)[0]
   canvas.dispatchEvent(
     new PointerEvent('pointerdown', {
       bubbles: true,
-      clientX: box.left + Math.floor((box.width - roomWidth * zoom) / 2) + feet.x * zoom,
-      clientY: box.top + Math.floor((box.height - roomHeight * zoom) / 2) + (feet.y - 10) * zoom
+      clientX: box.left + Math.floor((box.width - roomWidth * zoom) / 2) + x * zoom,
+      clientY: box.top + Math.floor((box.height - roomHeight * zoom) / 2) + y * zoom
     })
   )
+}
+
+function clickFirstDesk(canvas: HTMLCanvasElement): void {
+  const { feet } = deskSeats(1)[0]
+  clickRoom(canvas, feet.x, feet.y - 10)
+}
+
+function clickFirstPlaque(canvas: HTMLCanvasElement): void {
+  const { desk } = deskSeats(1)[0]
+  clickRoom(canvas, desk.col * TILE_SIZE + 24, desk.row * TILE_SIZE + 28)
 }
 
 export const agentWindow = defineFixture({
@@ -115,5 +124,34 @@ export const agentWindow = defineFixture({
       clickFirstDesk(canvas)
     }
     await waitFor(frame, '[role="dialog"]')
+  }
+})
+
+export const workspaceMenu = defineFixture({
+  width: 960,
+  store: {
+    repos: [repo],
+    worktreesByRepo: { [repo.id]: [worktree] },
+    unifiedTabsByWorktree: { [worktree.id]: [tab] },
+    agentStatusByPaneKey: { [entry.paneKey]: entry },
+    agentStatusEpoch: 1
+  },
+  setup: () => {
+    localStorage.setItem(FLOOR_KEY, repo.id)
+  },
+  render: () => (
+    <div className="flex flex-col" style={{ height: 600 }}>
+      <AgentOfficeBuilding />
+    </div>
+  ),
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas + div button')
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    const canvas = frame.querySelector('canvas')
+    if (canvas) {
+      clickFirstPlaque(canvas)
+    }
+    await waitFor(frame, '[role="menu"]')
+    await new Promise((resolve) => setTimeout(resolve, 300))
   }
 })

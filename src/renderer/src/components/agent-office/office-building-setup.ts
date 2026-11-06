@@ -24,10 +24,13 @@ export type OfficeBuildingSetup = {
   onAgentClick: (paneKey: string) => void
   /** You clicked the receptionist, a floor's team board or a free desk, and are walking up to it. */
   onSpotClick: (spot: OfficeSpotId) => void
+  /** You clicked a desk's plaque: open its workspace's menu at this CSS point. */
+  onSectorClick: (worktreeId: string, at: { left: number; top: number }) => void
 }
 
 /** What the pointer rests on and where its label goes, in CSS pixels. */
 export type OfficeHover = { left: number; top: number } & (
   | { kind: 'agent'; agent: OfficeAgent; seenAt: number }
   | { kind: 'spot'; spot: OfficeSpotId }
+  | { kind: 'sector'; worktreeName: string }
 )

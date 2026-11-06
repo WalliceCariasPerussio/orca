@@ -19443,6 +19443,10 @@
         },
         "sidebar": {
           "label": "Agent Office"
+        },
+        "sector": {
+          "hint": "click for this workspace's menu: status, notes, sleep…",
+          "hint": "click for this workspace's menu: status, notes, sleep…"
         }
       }
     },

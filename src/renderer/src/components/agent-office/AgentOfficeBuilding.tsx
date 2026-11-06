@@ -1,15 +1,16 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { Button } from '../ui/button'
 import { useLiveDashboardSnapshot } from '../dashboard/useLiveDashboardSnapshot'
 import { AgentTerminalDialog } from '../dashboard-popout/AgentTerminalDialog'
 import { openHeaderCreateComposer } from '../sidebar/worktree-list/rows/header-create-workspace-target'
 import ElevatorPanel from './ElevatorPanel'
+import OfficeFooter from './OfficeFooter'
 import FloorTeamPanel from './FloorTeamPanel'
 import OfficeHoverTip, { hoverKey } from './OfficeHoverTip'
 import PetShopPanel from './PetShopPanel'
 import ReceptionDesk from './ReceptionDesk'
+import OfficeWorkspaceMenu, { type OfficeWorkspaceMenuAt } from './OfficeWorkspaceMenu'
 import StaffPetsPanel from './StaffPetsPanel'
 import { officeAgentsFrom, tallyByFloor } from './office-agents'
 import { OfficeBuilding } from './office-building'
@@ -48,6 +49,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const [panelOpen, setPanelOpen] = useState(false)
   const [deskAnchor, setDeskAnchor] = useState<{ left: number; top: number } | null>(null)
   const [hovered, setHovered] = useState<OfficeHover | null>(null)
+  const [workspaceMenu, setWorkspaceMenu] = useState<OfficeWorkspaceMenuAt | null>(null)
   const [windowOpen, setWindowOpen] = useState<'staff' | 'shop' | 'team' | null>(null)
   const [staffPets, assignStaffPet] = useStaffPets()
   const [floorTeams, setFloorTeam] = useFloorTeams()
@@ -106,7 +108,8 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     hireLabel,
     agents,
     thoughts,
-    cast
+    cast,
+    cards: snapshot.cards
   })
   useLayoutEffect(() => {
     latest.current = {
@@ -119,9 +122,16 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       hireLabel,
       agents,
       thoughts,
-      cast
+      cast,
+      cards: snapshot.cards
     }
   })
+  // Why: the workspace's host tells twins on several hosts apart; any of its agents' cards knows it.
+  const openWorkspaceMenu = useCallback((worktreeId: string, at: { left: number; top: number }) => {
+    setHovered(null)
+    const card = latest.current.cards.find((c) => c.worktreeId === worktreeId)
+    setWorkspaceMenu({ worktreeId, executionHostId: card?.executionHostId, ...at })
+  }, [])
 
   const castReady = cast !== null
   useEffect(() => {
@@ -155,6 +165,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         canvas.focus({ preventScroll: true })
         openAgentWindow(paneKey)
       },
+      onSectorClick: (worktreeId, at) => openWorkspaceMenu(worktreeId, at),
       onSpotClick: (spot) => {
         if (spot === 'reception') {
           setDeskAnchor(buildingRef.current?.receptionistAnchor() ?? null)
@@ -196,7 +207,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       building.dispose()
       buildingRef.current = null
     }
-  }, [castReady, openAgentWindow])
+  }, [castReady, openAgentWindow, openWorkspaceMenu])
 
   useEffect(() => {
     if (cast) {
@@ -244,6 +255,15 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           )
         }}
         onPointerLeave={() => setHovered(null)}
+        onContextMenu={(event) => {
+          event.preventDefault()
+          const box = event.currentTarget.getBoundingClientRect()
+          const at = { left: event.clientX - box.left, top: event.clientY - box.top }
+          const worktreeId = buildingRef.current?.sectorAt(at.left, at.top)
+          if (worktreeId) {
+            openWorkspaceMenu(worktreeId, at)
+          }
+        }}
         onKeyDown={(event) => {
           const step = STEP_KEYS[event.key]
           if (step) {
@@ -264,53 +284,16 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         />
       ) : null}
       {cast ? (
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-end justify-between gap-3">
-          <p className="text-xs text-muted-foreground">
-            {currentFloor.number === 0
-              ? translate(
-                  'auto.components.agentOffice.building.hint',
-                  'Click the floor to walk. Click the elevator to change floors. Click an agent to open its terminal.'
-                )
-              : translate(
-                  'auto.components.agentOffice.building.floorHint',
-                  "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team. Click a free desk to hire an agent."
-                )}
-          </p>
-          <span className="pointer-events-auto flex shrink-0 gap-2">
-            {waiting.length > 0 ? (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={panelOpen}
-                title={translate(
-                  'auto.components.agentOffice.visit.hint',
-                  "Takes the elevator if needed, walks up to the agent's desk and opens its terminal. Click again for the next one."
-                )}
-                onClick={() => {
-                  const next = waiting[visits.current++ % waiting.length]
-                  buildingRef.current?.visit(next.key)
-                }}
-              >
-                <span aria-hidden className="size-1.5 rounded-full bg-destructive" />
-                {translate(
-                  'auto.components.agentOffice.visit.button',
-                  'Go to who needs you ({{value0}})',
-                  {
-                    value0: waiting.length
-                  }
-                )}
-              </Button>
-            ) : null}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={panelOpen}
-              onClick={() => buildingRef.current?.callElevator()}
-            >
-              {translate('auto.components.agentOffice.elevator.call', 'Call elevator')}
-            </Button>
-          </span>
-        </div>
+        <OfficeFooter
+          inLobby={currentFloor.number === 0}
+          waitingCount={waiting.length}
+          disabled={panelOpen}
+          onVisit={() => {
+            const next = waiting[visits.current++ % waiting.length]
+            buildingRef.current?.visit(next.key)
+          }}
+          onCallElevator={() => buildingRef.current?.callElevator()}
+        />
       ) : (
         <p className="absolute inset-0 grid place-content-center text-sm text-muted-foreground">
           {failed
@@ -321,6 +304,13 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
             : translate('auto.components.agentOffice.reception.loading', 'Opening the office…')}
         </p>
       )}
+      {workspaceMenu ? (
+        <OfficeWorkspaceMenu
+          key={`${workspaceMenu.worktreeId}@${workspaceMenu.left},${workspaceMenu.top}`}
+          at={workspaceMenu}
+          onClose={() => setWorkspaceMenu(null)}
+        />
+      ) : null}
       {deskAnchor ? (
         <ReceptionDesk
           anchor={deskAnchor}

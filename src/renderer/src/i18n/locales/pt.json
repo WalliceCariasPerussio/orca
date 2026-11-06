@@ -20044,6 +20044,10 @@
         },
         "sidebar": {
           "label": "Escritório de Agentes"
+        },
+        "sector": {
+          "hint": "clique para o menu do workspace: status, notas, suspender…",
+          "hint": "clique para o menu do workspace: status, notas, suspender…"
         }
       }
     },

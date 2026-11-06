@@ -54,6 +54,9 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
     return null
   }
   const place = `${hover.left},${hover.top}`
+  if (hover.kind === 'sector') {
+    return `sector:${hover.worktreeName}:${place}`
+  }
   return hover.kind === 'agent'
     ? `agent:${hover.agent.key}:${hover.agent.bucket}:${hover.agent.verdict ?? ''}:${hover.agent.monitoring ? 'm' : ''}:${hover.agent.name}:${hover.agent.worktreeName}:${place}`
     : `spot:${hover.spot}:${place}`
@@ -119,6 +122,16 @@ export default function OfficeHoverTip({
           {thought ? (
             <p className="mt-1 line-clamp-3 border-t border-border pt-1 italic">{thought}</p>
           ) : null}
+        </>
+      ) : hover.kind === 'sector' ? (
+        <>
+          <p className="truncate font-medium">{hover.worktreeName}</p>
+          <p className="text-muted-foreground">
+            {translate(
+              'auto.components.agentOffice.sector.hint',
+              "click for this workspace's menu: status, notes, sleep…"
+            )}
+          </p>
         </>
       ) : hover.spot === 'freeDesk' ? (
         <>

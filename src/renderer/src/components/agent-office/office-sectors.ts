@@ -9,12 +9,14 @@ import {
 } from './office-scene'
 import { toss } from './office-team-draw'
 import { statusNoteDrawable, type OfficeWorkspaceStatus } from './office-status-notes'
-import type { TilePoint } from './office-walker'
+import type { TilePoint, WorldPoint } from './office-walker'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
 /** What a desk's plaque says, the color strip of its sector, and its workspace's pull request. */
 export type DeskPlaque = {
   desk: TilePoint
+  /** The workspace whose menu clicking the plaque opens; unset on a free desk. */
+  worktreeId?: string
   label: string
   color: string | null
   review?: DashboardCardReview
@@ -35,6 +37,25 @@ const REVIEW_COLORS: Record<DashboardCardReview['state'], string> = {
 const FONT_SIZE = 5
 /** Desks sort at their bottom edge; the plaque sits just in front of its desk. */
 const DESK_DEPTH = 2 * TILE_SIZE + 0.6
+
+/** The plaque of a seated workspace under a world point, if any. */
+export function plaqueAt(plaques: readonly DeskPlaque[], world: WorldPoint): DeskPlaque | null {
+  return (
+    plaques.find(({ desk, worktreeId }) => {
+      const x = world.x - (desk.col * TILE_SIZE + PLAQUE.x)
+      const y = world.y - (desk.row * TILE_SIZE + PLAQUE.y)
+      return worktreeId && x >= 0 && x < PLAQUE.width && y >= 0 && y < PLAQUE.height
+    }) ?? null
+  )
+}
+
+/** Where a plaque's hover label points: just above its middle. */
+export function plaqueTip({ desk }: DeskPlaque): WorldPoint {
+  return {
+    x: desk.col * TILE_SIZE + PLAQUE.x + PLAQUE.width / 2,
+    y: desk.row * TILE_SIZE + PLAQUE.y
+  }
+}
 
 /** Agents of one workspace side by side, sectors in the order their first agent arrived. */
 export function groupBySector(agents: readonly OfficeAgent[]): OfficeAgent[] {
