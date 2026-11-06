@@ -86,6 +86,10 @@ export abstract class UpdaterBuildSelection extends UpdaterMenuChecks {
     channel: ReleaseChannel,
     options?: ReleaseBuildListOptions
   ): Promise<ReleaseBuild[]> {
+    // Fork builds must not list the official stablyai releases they cannot install.
+    if (!appUpdatesAvailable()) {
+      return []
+    }
     return this.releaseBuildCache.list(channel, options)
   }
 

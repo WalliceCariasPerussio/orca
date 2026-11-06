@@ -71,7 +71,8 @@ jobs:
 
       - name: Atualização automática ficou desligada no bundle
         run: |
-          if grep -rq "ORCA_APP_UPDATES_DISABLED" out/main; then
+          # Only the bundles: the hidden .js.map files carry the original source, identifier included.
+          if grep -rq --include='*.js' --include='*.cjs' --include='*.mjs' "ORCA_APP_UPDATES_DISABLED" out/main; then
             echo "::error::ORCA_APP_UPDATES_DISABLED não foi substituído no out/main"
             exit 1
           fi
