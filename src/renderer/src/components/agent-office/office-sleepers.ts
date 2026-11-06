@@ -55,16 +55,26 @@ export function sleepersFrom(
   })
 }
 
+/** The tabs of a workspace's sleeping agents, or of just one of them. */
+export function sleeperTabs(
+  records: SleepRecords,
+  tabs: TabsByWorktree,
+  worktreeId: string,
+  paneKey?: string
+): string[] {
+  return Object.values(records).flatMap((record) => {
+    const tabId = record.worktreeId === worktreeId ? wakeableTab(record, tabs) : null
+    return tabId && (paneKey === undefined || record.paneKey === paneKey) ? [tabId] : []
+  })
+}
+
 /**
  * Wakes sleeping agents without leaving the office: their tabs mount in the background, which
  * is how Orca resumes a slept agent it is asked for. Returns how many it woke.
  */
 export function wakeSleepers(worktreeId: string, paneKey?: string): number {
   const { sleepingAgentSessionsByPaneKey: records, tabsByWorktree } = useAppStore.getState()
-  const tabIds = Object.values(records).flatMap((record) => {
-    const tabId = record.worktreeId === worktreeId ? wakeableTab(record, tabsByWorktree) : null
-    return tabId && (paneKey === undefined || record.paneKey === paneKey) ? [tabId] : []
-  })
+  const tabIds = sleeperTabs(records, tabsByWorktree, worktreeId, paneKey)
   for (const tabId of new Set(tabIds)) {
     mountAgentTerminal(worktreeId, tabId)
   }

@@ -13,6 +13,7 @@ import OfficeHoverTip, { hoverKey } from './OfficeHoverTip'
 import PetShopPanel from './PetShopPanel'
 import ReceptionDesk from './ReceptionDesk'
 import OfficeWorkspaceMenu, { type OfficeWorkspaceMenuAt } from './OfficeWorkspaceMenu'
+import WorkspaceDeskMenu from './WorkspaceDeskMenu'
 import StaffPetsPanel from './StaffPetsPanel'
 import { tallyByFloor } from './office-agents'
 import { automationCounts, useProjectAutomations } from './office-automations'
@@ -30,6 +31,8 @@ import { hireChoices } from './office-hire-choices'
 import { useOfficeAgentWindow } from './use-office-agent-window'
 import { useOfficeAgents } from './use-office-agents'
 import { useOfficeCast } from './use-office-cast'
+
+type OfficeMenuPoint = { left: number; top: number }
 
 function hireInNewWorkspace(floorId: string): void {
   const repo = useAppStore.getState().repos.find((r) => r.id === floorId)
@@ -54,7 +57,10 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const [panelOpen, setPanelOpen] = useState(false)
   const [deskAnchor, setDeskAnchor] = useState<{ left: number; top: number } | null>(null)
   const [hovered, setHovered] = useState<OfficeHover | null>(null)
-  const [workspaceMenu, setWorkspaceMenu] = useState<OfficeWorkspaceMenuAt | null>(null)
+  // Why: a click opens the desk's own menu; a right-click, or its last row, opens Orca's.
+  const [workspaceMenu, setWorkspaceMenu] = useState<
+    (OfficeWorkspaceMenuAt & { orca: boolean }) | null
+  >(null)
   const [hireAt, setHireAt] = useState<{ left: number; top: number } | null>(null)
   const [managerAt, setManagerAt] = useState<{
     left: number
@@ -112,14 +118,17 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     latest.current = live
   })
   // Why: the workspace's host tells twins on several hosts apart; an empty desk has no card to ask.
-  const openWorkspaceMenu = useCallback((worktreeId: string, at: { left: number; top: number }) => {
-    setHovered(null)
-    const { cards, workspaces: all = [] } = latest.current.snapshot
-    const executionHostId =
-      cards.find((c) => c.worktreeId === worktreeId)?.executionHostId ??
-      all.find((w) => w.worktreeId === worktreeId)?.executionHostId
-    setWorkspaceMenu({ worktreeId, executionHostId, ...at })
-  }, [])
+  const openWorkspaceMenu = useCallback(
+    (worktreeId: string, at: OfficeMenuPoint, orca: boolean) => {
+      setHovered(null)
+      const { cards, workspaces: all = [] } = latest.current.snapshot
+      const executionHostId =
+        cards.find((c) => c.worktreeId === worktreeId)?.executionHostId ??
+        all.find((w) => w.worktreeId === worktreeId)?.executionHostId
+      setWorkspaceMenu({ worktreeId, executionHostId, orca, ...at })
+    },
+    []
+  )
 
   const castReady = cast !== null
   useEffect(() => {
@@ -154,7 +163,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         canvas.focus({ preventScroll: true })
         openAgentWindow(paneKey)
       },
-      onSectorClick: (worktreeId, at) => openWorkspaceMenu(worktreeId, at),
+      onSectorClick: (worktreeId, at) => openWorkspaceMenu(worktreeId, at, false),
       onSpotClick: (spot) => {
         if (spot === 'managerDesk') {
           setHovered(null)
@@ -273,7 +282,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           const at = { left: event.clientX - box.left, top: event.clientY - box.top }
           const worktreeId = buildingRef.current?.sectorAt(at.left, at.top)
           if (worktreeId) {
-            openWorkspaceMenu(worktreeId, at)
+            openWorkspaceMenu(worktreeId, at, true)
           }
         }}
         onKeyDown={(event) => handleOfficeKey(event, buildingRef.current)}
@@ -335,7 +344,14 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           onClose={() => setHireAt(null)}
         />
       ) : null}
-      {workspaceMenu ? (
+      {workspaceMenu && !workspaceMenu.orca ? (
+        <WorkspaceDeskMenu
+          at={workspaceMenu}
+          snapshot={snapshot}
+          onOrcaMenu={() => setWorkspaceMenu({ ...workspaceMenu, orca: true })}
+          onClose={() => setWorkspaceMenu(null)}
+        />
+      ) : workspaceMenu ? (
         <OfficeWorkspaceMenu
           key={`${workspaceMenu.worktreeId}@${workspaceMenu.left},${workspaceMenu.top}`}
           at={workspaceMenu}

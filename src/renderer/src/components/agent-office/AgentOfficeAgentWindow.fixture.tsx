@@ -151,7 +151,7 @@ export const workspaceMenu = defineFixture({
     if (canvas) {
       clickFirstPlaque(canvas)
     }
-    await waitFor(frame, '[role="menu"]')
+    await waitFor(frame, '[role="dialog"]')
     await new Promise((resolve) => setTimeout(resolve, 300))
   }
 })

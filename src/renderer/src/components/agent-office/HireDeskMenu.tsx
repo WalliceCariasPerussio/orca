@@ -1,13 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { Plus, X } from 'lucide-react'
-import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { AgentTypeIcon } from '@/lib/agent-type-icon'
 import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
 import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { DashboardWorkspace } from '../../../../shared/dashboard-snapshot'
 import { Button } from '../ui/button'
-import { launchAgentInWorkspace } from './office-agent-launch'
+import { hireAgentIn } from './office-agent-launch'
 
 const ROW =
   'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring'
@@ -15,18 +14,6 @@ const MAX_WORKSPACES = 8
 
 /** A workspace of this floor and the agents its host can start. */
 export type HireChoice = { workspace: DashboardWorkspace; agents: readonly TuiAgent[] }
-
-function launch(workspace: DashboardWorkspace, agent: TuiAgent): void {
-  launchAgentInWorkspace(workspace, agent).catch(() => {
-    toast.error(
-      translate(
-        'auto.components.agentOffice.hire.launchFailed',
-        'Could not start {{value0}} in {{value1}}.',
-        { value0: formatAgentTypeLabel(agent), value1: workspace.worktreeName }
-      )
-    )
-  })
-}
 
 /** What a free desk offers: a new workspace, or one more agent in a workspace already on the floor. */
 export default function HireDeskMenu({
@@ -100,7 +87,7 @@ export default function HireDeskMenu({
                   title={label}
                   aria-label={label}
                   onClick={() => {
-                    launch(workspace, agent)
+                    hireAgentIn(workspace, agent)
                     onClose()
                   }}
                 >

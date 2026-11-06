@@ -1,4 +1,7 @@
+import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
 import { launchAgentBackgroundSession } from '@/lib/launch-agent-background-session'
+import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
 import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { DashboardWorkspace } from '../../../../shared/dashboard-snapshot'
 import { requestBackgroundTerminalWorktreeMount } from '../terminal/background-terminal-worktree-mount'
@@ -35,4 +38,17 @@ export async function launchAgentInWorkspace(
   result.terminalOwnership?.release()
   result.releaseRuntimeObservers()
   return result.paneKey
+}
+
+/** Hires an agent at a desk of the workspace, telling you when it could not start. */
+export function hireAgentIn(workspace: DashboardWorkspace, agent: TuiAgent): void {
+  launchAgentInWorkspace(workspace, agent).catch(() => {
+    toast.error(
+      translate(
+        'auto.components.agentOffice.hire.launchFailed',
+        'Could not start {{value0}} in {{value1}}.',
+        { value0: formatAgentTypeLabel(agent), value1: workspace.worktreeName }
+      )
+    )
+  })
 }

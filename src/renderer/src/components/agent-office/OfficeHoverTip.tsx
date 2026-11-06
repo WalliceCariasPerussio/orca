@@ -161,7 +161,7 @@ export default function OfficeHoverTip({
           <p className="text-muted-foreground">
             {translate(
               'auto.components.agentOffice.sector.hint',
-              "click for this workspace's menu: status, notes, sleep…"
+              "click to wake, sleep, hire or clear out; right-click for Orca's workspace menu"
             )}
           </p>
         </>
