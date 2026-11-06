@@ -5,6 +5,7 @@ import { useLiveDashboardSnapshot } from '../dashboard/useLiveDashboardSnapshot'
 import { AgentTerminalDialog } from '../dashboard-popout/AgentTerminalDialog'
 import { openHeaderCreateComposer } from '../sidebar/worktree-list/rows/header-create-workspace-target'
 import ElevatorPanel from './ElevatorPanel'
+import HireDeskMenu from './HireDeskMenu'
 import OfficeFooter from './OfficeFooter'
 import FloorTeamPanel from './FloorTeamPanel'
 import OfficeHoverTip, { hoverKey } from './OfficeHoverTip'
@@ -20,6 +21,7 @@ import { buildFloors, LOBBY_FLOOR_ID, needingYou, readRememberedFloorId } from '
 import { useStaffPets } from './office-staff-pets'
 import { useTeamPets } from './office-team-draw'
 import { thoughtsFrom } from './office-thoughts'
+import { hireChoices } from './office-hire-choices'
 import { useOfficeAgentWindow } from './use-office-agent-window'
 import { useOfficeCast } from './use-office-cast'
 
@@ -32,6 +34,13 @@ const STEP_KEYS: Record<string, [number, number]> = {
   s: [0, 1],
   a: [-1, 0],
   d: [1, 0]
+}
+
+function hireInNewWorkspace(floorId: string): void {
+  const repo = useAppStore.getState().repos.find((r) => r.id === floorId)
+  if (repo) {
+    openHeaderCreateComposer(repo, { pinHost: false })
+  }
 }
 
 export default function AgentOfficeBuilding(): React.JSX.Element {
@@ -50,6 +59,8 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const [deskAnchor, setDeskAnchor] = useState<{ left: number; top: number } | null>(null)
   const [hovered, setHovered] = useState<OfficeHover | null>(null)
   const [workspaceMenu, setWorkspaceMenu] = useState<OfficeWorkspaceMenuAt | null>(null)
+  const [hireAt, setHireAt] = useState<{ left: number; top: number } | null>(null)
+  const pointerAt = useRef({ left: 0, top: 0 })
   const [windowOpen, setWindowOpen] = useState<'staff' | 'shop' | 'team' | null>(null)
   const [staffPets, assignStaffPet] = useStaffPets()
   const [floorTeams, setFloorTeam] = useFloorTeams()
@@ -109,7 +120,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     agents,
     thoughts,
     cast,
-    cards: snapshot.cards
+    snapshot
   })
   useLayoutEffect(() => {
     latest.current = {
@@ -123,13 +134,13 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       agents,
       thoughts,
       cast,
-      cards: snapshot.cards
+      snapshot
     }
   })
   // Why: the workspace's host tells twins on several hosts apart; any of its agents' cards knows it.
   const openWorkspaceMenu = useCallback((worktreeId: string, at: { left: number; top: number }) => {
     setHovered(null)
-    const card = latest.current.cards.find((c) => c.worktreeId === worktreeId)
+    const card = latest.current.snapshot.cards.find((c) => c.worktreeId === worktreeId)
     setWorkspaceMenu({ worktreeId, executionHostId: card?.executionHostId, ...at })
   }, [])
 
@@ -171,9 +182,11 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           setDeskAnchor(buildingRef.current?.receptionistAnchor() ?? null)
         } else if (spot === 'freeDesk') {
           setHovered(null)
-          const repo = useAppStore.getState().repos.find((r) => r.id === latest.current.floorId)
-          if (repo) {
-            openHeaderCreateComposer(repo, { pinHost: false })
+          const { snapshot: live, floorId: here } = latest.current
+          if (hireChoices(live, here).length > 0) {
+            setHireAt(pointerAt.current)
+          } else {
+            hireInNewWorkspace(here)
           }
         } else {
           setHovered(null)
@@ -245,7 +258,9 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         onPointerDown={(event) => {
           const box = event.currentTarget.getBoundingClientRect()
           setDeskAnchor(null)
-          buildingRef.current?.pointer(event.clientX - box.left, event.clientY - box.top)
+          setHireAt(null)
+          pointerAt.current = { left: event.clientX - box.left, top: event.clientY - box.top }
+          buildingRef.current?.pointer(pointerAt.current.left, pointerAt.current.top)
         }}
         onPointerMove={(event) => {
           const box = event.currentTarget.getBoundingClientRect()
@@ -304,6 +319,17 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
             : translate('auto.components.agentOffice.reception.loading', 'Opening the office…')}
         </p>
       )}
+      {hireAt ? (
+        <HireDeskMenu
+          anchor={hireAt}
+          choices={hireChoices(snapshot, currentFloor.id)}
+          onNewWorkspace={() => {
+            setHireAt(null)
+            hireInNewWorkspace(currentFloor.id)
+          }}
+          onClose={() => setHireAt(null)}
+        />
+      ) : null}
       {workspaceMenu ? (
         <OfficeWorkspaceMenu
           key={`${workspaceMenu.worktreeId}@${workspaceMenu.left},${workspaceMenu.top}`}

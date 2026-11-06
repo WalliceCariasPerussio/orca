@@ -19993,7 +19993,10 @@
         "hire": {
           "plaque": "Vaga",
           "desk": "Mesa vaga",
-          "deskHint": "clique para contratar um agente para este projeto"
+          "deskHint": "clique para contratar um agente para este projeto",
+          "launchFailed": "Não deu para iniciar {{value0}} em {{value1}}.",
+          "joinWorkspace": "Ou mais um agente num workspace deste andar:",
+          "launch": "{{value0}} em {{value1}}"
         },
         "thought": {
           "edit": "Editando",

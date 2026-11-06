@@ -19392,7 +19392,10 @@
         "hire": {
           "plaque": "Hiring",
           "desk": "Free desk",
-          "deskHint": "click to hire an agent for this project"
+          "deskHint": "click to hire an agent for this project",
+          "launchFailed": "Could not start {{value0}} in {{value1}}.",
+          "joinWorkspace": "Or one more agent in a workspace of this floor:",
+          "launch": "{{value0}} in {{value1}}"
         },
         "thought": {
           "edit": "Editing",

@@ -1,5 +1,6 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import type { DashboardCardReview } from '../../../../shared/dashboard-snapshot'
+import HireDeskMenu, { type HireChoice } from './HireDeskMenu'
 import OfficeHoverTip from './OfficeHoverTip'
 import { agentsWith, fakeAgents, StaffedFloor, stagedRepos, waitFor } from './office-staged-floor'
 
@@ -181,6 +182,36 @@ export const sectorTip = defineFixture({
   render: () => (
     <div className="relative h-32">
       <OfficeHoverTip hover={{ kind: 'sector', worktreeName: 'fix/cache', left: 350, top: 100 }} />
+    </div>
+  )
+})
+
+const workspaceOf = (worktreeName: string): HireChoice['workspace'] => ({
+  repoId: 'mesa',
+  worktreeId: `wt-${worktreeName}`,
+  repoName: 'MesaLocal',
+  worktreeName,
+  hostKind: 'local',
+  executionHostId: 'local',
+  workspaceKind: 'worktree'
+})
+
+const HIRE_CHOICES: HireChoice[] = [
+  { workspace: workspaceOf('feat/login-social'), agents: ['claude', 'codex', 'opencode'] },
+  { workspace: workspaceOf('fix/cache'), agents: ['claude', 'codex'] },
+  { workspace: workspaceOf('main'), agents: ['claude', 'codex', 'gemini'] }
+]
+
+export const hireMenu = defineFixture({
+  width: 700,
+  render: () => (
+    <div className="relative h-80">
+      <HireDeskMenu
+        anchor={{ left: 350, top: 20 }}
+        choices={HIRE_CHOICES}
+        onNewWorkspace={() => {}}
+        onClose={() => {}}
+      />
     </div>
   )
 })
