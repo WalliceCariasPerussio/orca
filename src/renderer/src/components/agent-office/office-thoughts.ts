@@ -70,6 +70,11 @@ function toolThought(entry: AgentStatusEntry | undefined): string {
   return target ? `${toolVerb(toolName)} ${target}` : toolVerb(toolName)
 }
 
+// Why: a pet says what its agent said; a tool's raw output is not that, and may carry anything.
+function spoken(card: DashboardCard, entry: AgentStatusEntry | undefined): string {
+  return entry?.lastAssistantMessageIsToolOutput ? '' : firstLine(card.lastAgentMessage)
+}
+
 /** What a pet thinks: what its agent is doing, the question it has for you, or what it just said. */
 export function thoughtOf(card: DashboardCard, entry: AgentStatusEntry | undefined): string {
   switch (card.bucket) {
@@ -87,11 +92,11 @@ export function thoughtOf(card: DashboardCard, entry: AgentStatusEntry | undefin
     case 'working':
       return (
         toolThought(entry) ||
-        firstLine(card.lastAgentMessage) ||
+        spoken(card, entry) ||
         translate('auto.components.agentOffice.thought.thinking', 'Thinking…')
       )
     case 'done':
-      return firstLine(card.lastAgentMessage)
+      return spoken(card, entry)
     case 'idle':
       return ''
   }
