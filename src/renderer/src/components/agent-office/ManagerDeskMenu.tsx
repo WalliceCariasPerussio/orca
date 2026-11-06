@@ -1,21 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import { AgentTypeIcon } from '@/lib/agent-type-icon'
-import { ORCHESTRATION_SKILL_NAME } from '@/lib/agent-feature-skill-names'
 import { useActiveProjectSkillRuntime } from '@/hooks/useActiveProjectSkillRuntime'
-import {
-  GLOBAL_AGENT_SKILL_SOURCE_KINDS,
-  useInstalledAgentSkill
-} from '@/hooks/useInstalledAgentSkills'
-import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
+import { getResolvedExecutionHostIdForWorktree } from '@/lib/resolved-worktree-execution-host'
+import { useAppStore } from '@/store'
 import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { DashboardWorkspace } from '../../../../shared/dashboard-snapshot'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import { FloatingTerminalOrchestrationDialog } from '../floating-terminal/FloatingTerminalOrchestrationDialog'
 import { Button } from '../ui/button'
-
-const ROW =
-  'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring'
+import ManagerChoice from './ManagerChoice'
 
 /** The empty manager's desk: who will take your requests and hand them to Orca workers. */
 export default function ManagerDeskMenu({
@@ -37,12 +31,15 @@ export default function ManagerDeskMenu({
 }): React.JSX.Element {
   const panelRef = useRef<HTMLDivElement>(null)
   const [setupOpen, setSetupOpen] = useState(false)
+  // Why: once the skill is set up, each choice checks again.
+  const [checkRound, setCheckRound] = useState(0)
   const runtime = useActiveProjectSkillRuntime()
-  const skill = useInstalledAgentSkill(ORCHESTRATION_SKILL_NAME, {
-    enabled: true,
-    discoveryTarget: runtime.discoveryTarget,
-    sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
+  // Why: Orca checks skills on the active workspace's host; that only answers for a manager here when both are local.
+  const activeIsLocal = useAppStore((s) => {
+    const host = getResolvedExecutionHostIdForWorktree(s, s.activeWorktreeId)
+    return host === null || host === LOCAL_EXECUTION_HOST_ID
   })
+  const checkable = activeIsLocal && workspace?.hostKind === 'local'
   useEffect(() => {
     panelRef.current?.querySelector<HTMLButtonElement>('button[data-hire]')?.focus()
   }, [])
@@ -80,19 +77,6 @@ export default function ManagerDeskMenu({
           'A manager takes your requests, splits them into tasks and hands them to Orca workers through orchestration. Click it later to brief it in its terminal.'
         )}
       </p>
-      {!skill.installed && !skill.loading ? (
-        <div className="mx-2 my-1 grid gap-1.5 rounded-md border border-border p-2 text-xs">
-          <p>
-            {translate(
-              'auto.components.agentOffice.manager.noSkill',
-              "Your agents don't have Orca's orchestration skill yet, which the manager needs."
-            )}
-          </p>
-          <Button variant="outline" size="sm" onClick={() => setSetupOpen(true)}>
-            {translate('auto.components.agentOffice.manager.setUp', 'Set up orchestration')}
-          </Button>
-        </div>
-      ) : null}
       {workspace && agents.length > 0 ? (
         <>
           <p className="px-2 pt-1 text-xs text-muted-foreground">
@@ -103,16 +87,14 @@ export default function ManagerDeskMenu({
             )}
           </p>
           {agents.map((agent) => (
-            <button
-              key={agent}
-              type="button"
-              data-hire
-              className={ROW}
-              onClick={() => onHire(agent)}
-            >
-              <AgentTypeIcon agentType={agent} size={14} />
-              {formatAgentTypeLabel(agent)}
-            </button>
+            <ManagerChoice
+              key={`${agent}:${checkRound}`}
+              agent={agent}
+              checkable={checkable}
+              discoveryTarget={runtime.discoveryTarget}
+              onHire={() => onHire(agent)}
+              onSetUp={() => setSetupOpen(true)}
+            />
           ))}
         </>
       ) : (
@@ -132,7 +114,7 @@ export default function ManagerDeskMenu({
       <FloatingTerminalOrchestrationDialog
         open={setupOpen}
         onOpenChange={setSetupOpen}
-        onSetupStateChange={() => void skill.refresh()}
+        onSetupStateChange={() => setCheckRound((round) => round + 1)}
       />
     </div>
   )
