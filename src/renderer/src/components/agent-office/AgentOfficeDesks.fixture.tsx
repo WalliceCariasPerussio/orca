@@ -52,3 +52,21 @@ export const sleepingHoverTip = defineFixture({
     </div>
   )
 })
+
+// Why: two of them rest side by side on the sofa, so one cloud has to move up out of the other's way.
+const EVERYONE_THINKS = new Map([
+  ['pane-0', 'Editando office-roaming.ts'],
+  ['pane-1', 'Posso apagar a pasta dist antes do build?'],
+  ['pane-2', 'Pronto! Os testes passaram.'],
+  ['pane-3', 'Esperando a próxima tarefa'],
+  ['pane-4', 'Rodando pnpm test'],
+  ['pane-5', 'Lendo o README do projeto'],
+  ['pane-6', 'Preciso da sua senha do npm']
+])
+
+export const everyoneThinks = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => <StaffedFloor thoughts={EVERYONE_THINKS} />,
+  interact: (frame) => waitFor(frame, 'canvas[data-ready]')
+})

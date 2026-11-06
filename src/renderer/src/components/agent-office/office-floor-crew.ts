@@ -29,7 +29,7 @@ import {
   type OfficeScene
 } from './office-scene'
 import { spotAt, type SpotHit } from './office-spots'
-import { thinkerNow, thoughtCloud } from './office-thought-clouds'
+import { thoughtClouds } from './office-thought-clouds'
 import { sameThoughts, type OfficeThoughts } from './office-thoughts'
 import type { TilePoint, WorldPoint } from './office-walker'
 import { RECEPTIONIST_BLOCKED } from './reception-layout'
@@ -178,13 +178,12 @@ export class FloorCrew {
       const head = { x: feet.x, y: feet.y - lift - FIGURE_HEIGHT }
       return { key: desk.agent.key, bucket: desk.agent.bucket, head }
     })
-    const turn = thinkerNow(thinkers, this.thoughts, now)
-    const text = turn.thinker && this.thoughts.get(turn.thinker.key)
-    if (turn.thinker && text) {
-      drawn.drawables.push(thoughtCloud(text, turn.thinker.head, projection))
+    const clouds = thoughtClouds(thinkers, this.thoughts, projection)
+    if (clouds) {
+      drawn.drawables.push(clouds)
     }
     const napMs = Math.min(...this.staff.desks.map(({ agent }) => untilNap(agent, Date.now())))
-    const holdMs = Math.min(drawn.holdMs, this.roaming.wakeInMs(now), turn.holdMs, napMs)
+    const holdMs = Math.min(drawn.holdMs, this.roaming.wakeInMs(now), napMs)
     return { ...drawn, holdMs }
   }
 }
