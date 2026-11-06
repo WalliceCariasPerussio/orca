@@ -30,7 +30,9 @@ export async function launchAgentInWorkspace(
   if (!result) {
     throw new Error('agent_office_launch_failed')
   }
-  // Why: the office follows the agent through Orca's live status, not a remote output stream.
+  // Why: the agent is yours to keep, not an automation run to retire, and the office follows it
+  // through Orca's live status rather than its own output stream.
+  result.terminalOwnership?.release()
   result.releaseRuntimeObservers()
   return result.paneKey
 }

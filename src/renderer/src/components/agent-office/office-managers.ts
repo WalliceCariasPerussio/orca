@@ -54,18 +54,23 @@ function writeManagers(managers: FloorManagers): void {
   }
 }
 
-/** Each floor's manager, saved on this computer; a null pane marks one being hired right now. */
+/**
+ * Each floor's manager, saved on this computer. A null pane marks one being hired right now;
+ * `undefined` forgets the floor's manager, as after a hire that failed.
+ */
 export function useFloorManagers(): [
   FloorManagers,
-  (floorId: string, paneKey: string | null) => void
+  (floorId: string, paneKey: string | null | undefined) => void
 ] {
   const [managers, setManagers] = useState(readManagers)
   useEffect(() => writeManagers(managers), [managers])
-  const setManager = useCallback((floorId: string, paneKey: string | null) => {
-    setManagers((current) => ({
-      ...current,
-      [floorId]: { paneKey: paneKey ?? '', hiredAt: Date.now() }
-    }))
+  const setManager = useCallback((floorId: string, paneKey: string | null | undefined) => {
+    setManagers((current) => {
+      const { [floorId]: _forgotten, ...others } = current
+      return paneKey === undefined
+        ? others
+        : { ...others, [floorId]: { paneKey: paneKey ?? '', hiredAt: Date.now() } }
+    })
   }, [])
   return [managers, setManager]
 }

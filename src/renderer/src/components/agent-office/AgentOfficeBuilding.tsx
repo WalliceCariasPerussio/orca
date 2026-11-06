@@ -327,6 +327,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
             setManager(currentFloor.id, null)
           }}
           onHired={(paneKey) => setManager(currentFloor.id, paneKey)}
+          onHireFailed={() => setManager(currentFloor.id, undefined)}
           onClose={() => setManagerAt(null)}
         />
       ) : null}

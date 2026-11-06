@@ -15,6 +15,7 @@ export default function OfficeManagerHire({
   snapshot,
   onHiring,
   onHired,
+  onHireFailed,
   onClose
 }: {
   anchor: { left: number; top: number }
@@ -26,6 +27,8 @@ export default function OfficeManagerHire({
   onHiring: () => void
   /** The new manager's pane, once Orca has started it. */
   onHired: (paneKey: string) => void
+  /** Orca could not start it: free the desk again. */
+  onHireFailed: () => void
   onClose: () => void
 }): React.JSX.Element {
   const mainWorktreeId = useAppStore(
@@ -49,6 +52,7 @@ export default function OfficeManagerHire({
         }
         onHiring()
         launchManager(workspace, agent, floor.name).then(onHired, () => {
+          onHireFailed()
           toast.error(
             translate(
               'auto.components.agentOffice.manager.hireFailed',
