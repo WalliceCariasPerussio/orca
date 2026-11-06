@@ -2,6 +2,7 @@ import { defineFixture } from '../../component-fixtures/component-fixture'
 import { makeAutomation } from '../automations/automations-page-fixtures'
 import type { DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import HireDeskMenu, { type HireChoice } from './HireDeskMenu'
+import ManagerDeskMenu from './ManagerDeskMenu'
 import OfficeHoverTip from './OfficeHoverTip'
 import type { OfficeAgent } from './office-agents'
 import { agentsWith, fakeAgents, StaffedFloor, stagedRepos, waitFor } from './office-staged-floor'
@@ -289,6 +290,48 @@ export const crewTip = defineFixture({
           left: 350,
           top: 140
         }}
+      />
+    </div>
+  )
+})
+
+const MANAGED_BY_BOSS = new Map<string, OfficeAgent['crew']>([
+  ['pane-0', { kind: 'managing', count: 3 }],
+  ['pane-1', { kind: 'managed', by: 'Gerente MesaLocal', task: 'Revisar o cache do login' }],
+  ['pane-4', { kind: 'managed', by: 'Gerente MesaLocal', task: 'Corrigir o cache do login' }],
+  ['pane-5', { kind: 'managed', by: 'Gerente MesaLocal', task: 'Escrever os testes do cache' }]
+])
+
+export const managerFloor = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => (
+    <StaffedFloor
+      agents={fakeAgents().map((agent) => ({
+        ...agent,
+        crew: MANAGED_BY_BOSS.get(agent.key),
+        manager: agent.key === 'pane-0' || undefined,
+        name: agent.key === 'pane-0' ? 'Gerente MesaLocal' : agent.name
+      }))}
+    />
+  ),
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+})
+
+export const managerDeskMenu = defineFixture({
+  width: 700,
+  render: () => (
+    <div className="relative h-80">
+      <ManagerDeskMenu
+        anchor={{ left: 350, top: 300 }}
+        projectName="MesaLocal"
+        workspace={workspaceOf('main')}
+        agents={['claude', 'codex', 'opencode']}
+        onHire={() => {}}
+        onClose={() => {}}
       />
     </div>
   )

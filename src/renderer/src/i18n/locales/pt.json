@@ -20067,6 +20067,20 @@
           "managing": "Gerenciando {{value0}} agentes",
           "task": "Tarefa: {{value0}}",
           "managedBy": "Gerenciado por {{value0}}"
+        },
+        "manager": {
+          "plaque": "Gerente",
+          "title": "Gerente do andar",
+          "desk": "Mesa do gerente",
+          "deskHint": "clique para contratar um gerente que passa seus pedidos para workers do Orca",
+          "about": "O gerente recebe os seus pedidos, quebra em tarefas e passa para workers do Orca pela orquestração. Depois, clique nele para conversar no terminal dele.",
+          "noSkill": "Seus agentes ainda não têm a skill de orquestração do Orca, que o gerente precisa.",
+          "setUp": "Configurar a orquestração",
+          "who": "Quem gerencia {{value0}}? Ele trabalha em {{value1}}.",
+          "noAgents": "Nenhum agente foi encontrado no host de {{value0}}.",
+          "noWorkspace": "O workspace principal deste projeto não está aberto no Orca.",
+          "hireFailed": "Não deu para iniciar {{value0}} como gerente de {{value1}}.",
+          "prompt": "Você é o gerente do projeto {{value0}} no Orca. Eu sou o dono: vou dizer o que precisa ser feito ou perguntar como as coisas estão. Para cada pedido, quebre o trabalho em tarefas e passe para workers do Orca pela orquestração do Orca (carregue antes a skill de orquestração). Use este mesmo workspace para tarefas pequenas e workspaces novos para as independentes. Acompanhe os workers, responda às dúvidas deles ou traga para mim, e me avise quando cada tarefa terminar. Não escreva o código você mesmo, a não ser que eu peça. Comece se apresentando em uma linha e espere o meu primeiro pedido."
         }
       }
     },

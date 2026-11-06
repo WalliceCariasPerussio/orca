@@ -12,7 +12,8 @@ import {
   staffFloor,
   staffTiles,
   type FloorStaff,
-  type StaffHit
+  type StaffHit,
+  type StaffLabels
 } from './office-floor-staff'
 import { layoutForFloor, type OfficeFloor } from './office-floors'
 import type { PetSprite } from './office-pet-sprite'
@@ -42,7 +43,7 @@ function pinnedKeys(agents: readonly OfficeAgent[]): Set<string> {
   return new Set(
     agents.flatMap((agent) => [
       ...(agent.parentKey ? [agent.parentKey] : []),
-      ...(agent.subagents.length > 0 ? [agent.key] : [])
+      ...(agent.subagents.length > 0 || agent.manager ? [agent.key] : [])
     ])
   )
 }
@@ -56,7 +57,7 @@ export class FloorCrew {
   private thoughts: OfficeThoughts = new Map()
   private floorId: string | null = null
 
-  constructor(private readonly hireLabel: string) {}
+  constructor(private readonly labels: StaffLabels) {}
 
   /** Builds the room on screen; on a project floor, seats its agents with a desk for each. */
   seat(
@@ -73,7 +74,7 @@ export class FloorCrew {
       this.departures.clear()
       this.floorId = floor.id
     }
-    this.staff = staffFloor(agents, floor.id, sprites, this.hireLabel)
+    this.staff = staffFloor(agents, floor.id, sprites, this.labels)
     const layout = layoutForFloor(floor, this.staff.deskCount)
     const scene = buildOfficeScene(layout, staffTiles(this.staff))
     const now = performance.now()

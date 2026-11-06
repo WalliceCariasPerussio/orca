@@ -4,7 +4,8 @@ import type { DashboardWorkspace } from '../../../../shared/dashboard-snapshot'
 import { parseExecutionHostId } from '../../../../shared/execution-host'
 import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 
-function hostOf(workspace: DashboardWorkspace): RuntimeClientTarget {
+/** The runtime that owns a workspace: this computer's, or the remote Orca host it lives on. */
+export function hostOf(workspace: DashboardWorkspace): RuntimeClientTarget {
   const host = parseExecutionHostId(workspace.executionHostId)
   return host?.kind === 'runtime'
     ? { kind: 'environment', environmentId: host.environmentId }

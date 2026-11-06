@@ -69,7 +69,7 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
     return `spot:${hover.spot}:${place}`
   }
   const { agent } = hover
-  const state = `${agent.bucket}:${agent.verdict ?? ''}:${agent.monitoring ? 'm' : ''}`
+  const state = `${agent.bucket}:${agent.verdict ?? ''}:${agent.monitoring ? 'm' : ''}:${agent.manager ? 'boss' : ''}`
   const workspace = `${agent.worktreeName}:${agent.workspaceStatus?.label ?? ''}:${agent.review?.number ?? ''}${agent.review?.state ?? ''}`
   return `agent:${agent.key}:${state}:${agent.name}:${workspace}:${agent.remoteHost ?? ''}:${crewRoleKey(agent.crew)}:${place}`
 }
@@ -118,6 +118,11 @@ export default function OfficeHoverTip({
           {hover.agent.remoteHost ? (
             <p className="truncate text-muted-foreground">{hover.agent.remoteHost}</p>
           ) : null}
+          {hover.agent.manager ? (
+            <p className="truncate font-medium text-(--status-warning-text)">
+              {translate('auto.components.agentOffice.manager.title', 'Floor manager')}
+            </p>
+          ) : null}
           {hover.agent.crew ? (
             <CrewRoleLine role={hover.agent.crew} agentName={hover.agent.name} />
           ) : null}
@@ -157,6 +162,18 @@ export default function OfficeHoverTip({
         </>
       ) : hover.spot === 'automations' ? (
         <AutomationsTipBody automations={automations} seenAt={hover.seenAt} />
+      ) : hover.spot === 'managerDesk' ? (
+        <>
+          <p className="truncate font-medium">
+            {translate('auto.components.agentOffice.manager.desk', "Manager's desk")}
+          </p>
+          <p className="text-muted-foreground">
+            {translate(
+              'auto.components.agentOffice.manager.deskHint',
+              'click to hire a manager who hands your requests to Orca workers'
+            )}
+          </p>
+        </>
       ) : hover.spot === 'freeDesk' ? (
         <>
           <p className="truncate font-medium">

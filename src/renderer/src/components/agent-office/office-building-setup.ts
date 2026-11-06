@@ -18,6 +18,8 @@ export type OfficeBuildingSetup = {
   teamBoardLabel: string
   /** On the plaque of each free desk, where clicking hires an agent. */
   hireLabel: string
+  /** On the plaque of the floor manager's desk. */
+  managerLabel: string
   onPanelChange: (open: boolean) => void
   onFloorChange: (floor: OfficeFloor) => void
   /** Opens the window of this pane's agent; a sub-agent without a terminal opens its parent's. */

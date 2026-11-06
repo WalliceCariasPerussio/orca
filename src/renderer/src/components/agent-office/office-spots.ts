@@ -5,7 +5,7 @@ import { RECEPTION_COUNTER_FRONT_TILE, RECEPTIONIST_FEET } from './reception-lay
 import { onWallCalendar, WALL_CALENDAR, WALL_CALENDAR_FRONT_TILE } from './office-wall-calendar'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
-export type OfficeSpotId = 'reception' | 'teamBoard' | 'freeDesk' | 'automations'
+export type OfficeSpotId = 'reception' | 'teamBoard' | 'freeDesk' | 'managerDesk' | 'automations'
 
 /** A clicked spot: where you walk to use it, and where its hover label points. */
 export type SpotHit = {

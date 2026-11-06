@@ -1,3 +1,4 @@
+import { GREMLIN_PET_ID } from '../pet/pet-models'
 import type { OfficeAgent } from './office-agents'
 import {
   deskAgentAt,
@@ -21,7 +22,7 @@ import type { DepthDrawable, OfficeProjection } from './office-scene'
 import { groupBySector, plaqueDrawables, sectorColor, type DeskPlaque } from './office-sectors'
 import type { SpotHit } from './office-spots'
 import type { WorldPoint } from './office-walker'
-import { deskSeats, type DeskSeat } from './project-floor-layout'
+import { deskSeats, MANAGER_SEAT, type DeskSeat } from './project-floor-layout'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
 /** Who works on one floor: agents at desks and the sub-agents standing by them. */
@@ -34,14 +35,23 @@ export type FloorStaff = {
   freeDesks: DeskSeat[]
   /** Each desk's plaque: the workspace of the agent at it, or the hiring sign. */
   plaques: DeskPlaque[]
+  /** Nobody manages this floor yet; clicking the manager's desk hires one. */
+  managerFree: boolean
 }
+
+/** What the plaques of free desks and of the manager's desk say. */
+export type StaffLabels = { hire: string; manager: string }
+
+/** The manager's plaque stripe, gold to tell the desk apart from the sectors. */
+const MANAGER_COLOR = '#d4a300'
 
 export const EMPTY_STAFF: FloorStaff = {
   deskCount: 0,
   desks: [],
   helpers: { standing: [], more: [] },
   freeDesks: [],
-  plaques: []
+  plaques: [],
+  managerFree: false
 }
 
 /** What is under a point: the agent to describe, whose window a click opens, and where to label it. */
@@ -51,11 +61,19 @@ export function staffFloor(
   agents: readonly OfficeAgent[],
   floorId: string,
   sprites: ReadonlyMap<string, PetSprite>,
-  hireLabel: string
+  labels: StaffLabels
 ): FloorStaff {
-  const atDesks = agents.filter((agent) => agent.floorId === floorId && !agent.parentKey)
+  const onFloor = agents.filter((agent) => agent.floorId === floorId && !agent.parentKey)
+  const manager = onFloor.find((agent) => agent.manager)
+  const atDesks = onFloor.filter((agent) => agent !== manager)
   const desks = seatAgents(groupBySector(atDesks), sprites)
-  const taken = new Set(seatTileKeys(desks))
+  const bossSprite = manager
+    ? (sprites.get(manager.petId) ?? sprites.get(GREMLIN_PET_ID) ?? sprites.values().next().value)
+    : undefined
+  if (manager && bossSprite) {
+    desks.push({ agent: manager, seat: MANAGER_SEAT, sprite: bossSprite })
+  }
+  const taken = new Set(seatTileKeys(desks.filter(({ agent }) => agent !== manager)))
   const freeDesks = deskSeats(atDesks.length).filter(
     ({ tile }) => !taken.has(`${tile.col},${tile.row}`)
   )
@@ -68,26 +86,42 @@ export function staffFloor(
       review: agent.review,
       status: agent.workspaceStatus
     })),
-    ...freeDesks.map((seat) => ({ desk: seat.desk, label: hireLabel, color: null }))
+    ...freeDesks.map((seat) => ({ desk: seat.desk, label: labels.hire, color: null })),
+    {
+      desk: MANAGER_SEAT.desk,
+      worktreeId: manager?.worktreeId,
+      label: labels.manager,
+      color: MANAGER_COLOR
+    }
   ]
   return {
     deskCount: atDesks.length,
     desks,
     helpers: helpersFor(desks, agents, sprites),
     freeDesks,
-    plaques
+    plaques,
+    managerFree: !manager
   }
+}
+
+function onDesk({ desk }: DeskSeat, world: WorldPoint): boolean {
+  const col = Math.floor(world.x / TILE_SIZE) - desk.col
+  const row = Math.floor(world.y / TILE_SIZE) - desk.row
+  return col >= 0 && col < 3 && row >= -1 && row < 2
+}
+
+function tipOver(seat: DeskSeat): WorldPoint {
+  return { x: seat.feet.x, y: seat.feet.y - FIGURE_HEIGHT }
 }
 
 /** A free desk under a point, chair included: you walk to its chair to hire. */
 export function freeDeskAt(staff: FloorStaff, world: WorldPoint): SpotHit | null {
-  const seat = staff.freeDesks.find(({ desk }) => {
-    const col = Math.floor(world.x / TILE_SIZE) - desk.col
-    const row = Math.floor(world.y / TILE_SIZE) - desk.row
-    return col >= 0 && col < 3 && row >= -1 && row < 2
-  })
-  return seat
-    ? { id: 'freeDesk', front: seat.tile, tip: { x: seat.feet.x, y: seat.feet.y - FIGURE_HEIGHT } }
+  const seat = staff.freeDesks.find((free) => onDesk(free, world))
+  if (seat) {
+    return { id: 'freeDesk', front: seat.tile, tip: tipOver(seat) }
+  }
+  return staff.managerFree && onDesk(MANAGER_SEAT, world)
+    ? { id: 'managerDesk', front: MANAGER_SEAT.tile, tip: tipOver(MANAGER_SEAT) }
     : null
 }
 

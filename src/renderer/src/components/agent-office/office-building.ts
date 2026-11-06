@@ -69,7 +69,7 @@ export class OfficeBuilding {
     this.floors = setup.floors
     this.floor = setup.floors.find((f) => f.id === setup.floorId) ?? setup.floors[0]
     this.staffSprites = setup.staffSprites
-    this.crew = new FloorCrew(setup.hireLabel)
+    this.crew = new FloorCrew({ hire: setup.hireLabel, manager: setup.managerLabel })
     this.scene = this.crew.seat(this.agents, this.floor, this.staffSprites)
     this.avatar = setup.avatar
     const entering = setup.startAtEntrance && this.floor.number === 0

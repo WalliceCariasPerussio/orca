@@ -19466,6 +19466,20 @@
           "managing": "Managing {{value0}} agents",
           "task": "Task: {{value0}}",
           "managedBy": "Managed by {{value0}}"
+        },
+        "manager": {
+          "plaque": "Manager",
+          "title": "Floor manager",
+          "desk": "Manager's desk",
+          "deskHint": "click to hire a manager who hands your requests to Orca workers",
+          "about": "A manager takes your requests, splits them into tasks and hands them to Orca workers through orchestration. Click it later to brief it in its terminal.",
+          "noSkill": "Your agents don't have Orca's orchestration skill yet, which the manager needs.",
+          "setUp": "Set up orchestration",
+          "who": "Who manages {{value0}}? It works in {{value1}}.",
+          "noAgents": "No agent was found on the host of {{value0}}.",
+          "noWorkspace": "This project's main workspace isn't open in Orca.",
+          "hireFailed": "Could not start {{value0}} as the manager of {{value1}}.",
+          "prompt": "You are the manager of the {{value0}} project in Orca. I am the owner: I will tell you what needs to be done, or ask where things stand. For each request, break the work into tasks and hand them to Orca workers through Orca orchestration (load the orchestration skill first). Use this same workspace for small tasks and new workspaces for independent ones. Follow the workers, answer their questions or bring them to me, and tell me when each task is done. Don't write the code yourself unless I ask. Start by introducing yourself in one line, then wait for my first request."
         }
       }
     },

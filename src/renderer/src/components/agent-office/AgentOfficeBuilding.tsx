@@ -6,6 +6,7 @@ import { AgentTerminalDialog } from '../dashboard-popout/AgentTerminalDialog'
 import { openHeaderCreateComposer } from '../sidebar/worktree-list/rows/header-create-workspace-target'
 import ElevatorPanel from './ElevatorPanel'
 import HireDeskMenu from './HireDeskMenu'
+import OfficeManagerHire from './OfficeManagerHire'
 import OfficeFooter from './OfficeFooter'
 import FloorTeamPanel from './FloorTeamPanel'
 import OfficeHoverTip, { hoverKey } from './OfficeHoverTip'
@@ -13,18 +14,19 @@ import PetShopPanel from './PetShopPanel'
 import ReceptionDesk from './ReceptionDesk'
 import OfficeWorkspaceMenu, { type OfficeWorkspaceMenuAt } from './OfficeWorkspaceMenu'
 import StaffPetsPanel from './StaffPetsPanel'
-import { officeAgentsFrom, tallyByFloor } from './office-agents'
-import { crewRoleKey, crewRolesFrom } from './office-crew-roles'
+import { tallyByFloor } from './office-agents'
 import { automationCounts, useProjectAutomations } from './office-automations'
 import { OfficeBuilding } from './office-building'
 import type { OfficeHover } from './office-building-setup'
 import { useFloorTeams } from './office-floor-teams'
+import { useFloorManagers } from './office-managers'
 import { buildFloors, LOBBY_FLOOR_ID, needingYou, readRememberedFloorId } from './office-floors'
 import { useStaffPets } from './office-staff-pets'
 import { useTeamPets } from './office-team-draw'
 import { thoughtsFrom } from './office-thoughts'
 import { hireChoices } from './office-hire-choices'
 import { useOfficeAgentWindow } from './use-office-agent-window'
+import { useOfficeAgents } from './use-office-agents'
 import { useOfficeCast } from './use-office-cast'
 
 const STEP_KEYS: Record<string, [number, number]> = {
@@ -54,6 +56,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const lobbyShort = translate('auto.components.agentOffice.elevator.lobbyShort', 'L')
   const boardLabel = translate('auto.components.agentOffice.team.boardLabel', 'Team')
   const hireLabel = translate('auto.components.agentOffice.hire.plaque', 'Hiring')
+  const managerLabel = translate('auto.components.agentOffice.manager.plaque', 'Manager')
   const floors = useMemo(() => buildFloors(repos, lobbyName), [repos, lobbyName])
   const [remembered] = useState(readRememberedFloorId)
   const [floorId, setFloorId] = useState(remembered ?? LOBBY_FLOOR_ID)
@@ -62,10 +65,13 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const [hovered, setHovered] = useState<OfficeHover | null>(null)
   const [workspaceMenu, setWorkspaceMenu] = useState<OfficeWorkspaceMenuAt | null>(null)
   const [hireAt, setHireAt] = useState<{ left: number; top: number } | null>(null)
+  const [managerAt, setManagerAt] = useState<{ left: number; top: number } | null>(null)
   const pointerAt = useRef({ left: 0, top: 0 })
   const [windowOpen, setWindowOpen] = useState<'staff' | 'shop' | 'team' | null>(null)
   const [staffPets, assignStaffPet] = useStaffPets()
   const [floorTeams, setFloorTeam] = useFloorTeams()
+  const [managers, setManager] = useFloorManagers()
+  const managerKeys = useMemo(() => new Set(Object.values(managers)), [managers])
   const { cast, failed } = useOfficeCast([
     ...Object.values(staffPets),
     ...Object.values(floorTeams).flat()
@@ -78,39 +84,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     () => thoughtsFrom(snapshot.cards, statusByPaneKey),
     [snapshot.cards, statusByPaneKey]
   )
-  const dispatchByPaneKey = useAppStore((s) => s.runtimeAgentOrchestrationByPaneKey)
-  const crewRoles = useMemo(
-    () => crewRolesFrom(snapshot.cards, statusByPaneKey, dispatchByPaneKey),
-    [snapshot.cards, statusByPaneKey, dispatchByPaneKey]
-  )
-  const freshAgents = officeAgentsFrom(snapshot.cards, staffPets, crewRoles)
-  // Why: the snapshot rebuilds on every status tick; reseat the floor only when what it shows changes.
-  const agentsKey = freshAgents
-    .map((a) =>
-      [
-        a.key,
-        a.floorId,
-        a.bucket,
-        a.petId,
-        a.name,
-        a.agentType,
-        a.worktreeId,
-        a.worktreeName,
-        a.since,
-        a.verdict ?? '',
-        a.monitoring ? 'm' : '',
-        a.remoteHost ?? '',
-        crewRoleKey(a.crew),
-        a.review ? `${a.review.number}${a.review.state}` : '',
-        a.workspaceStatus ? `${a.workspaceStatus.id}=${a.workspaceStatus.label}` : '',
-        a.workspaceStatus?.color ?? '',
-        a.parentKey ?? '',
-        ...a.subagents.map((s) => `${s.key}=${s.bucket}=${s.name}`)
-      ].join(':')
-    )
-    .join('|')
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the visible fields above
-  const dressedByKind = useMemo(() => freshAgents, [agentsKey])
+  const dressedByKind = useOfficeAgents(snapshot.cards, staffPets, managerKeys)
   const agents = useTeamPets(dressedByKind, floorTeams)
   const tallies = useMemo(() => tallyByFloor(agents), [agents])
   const waiting = useMemo(() => needingYou(agents, floors, floorId), [agents, floors, floorId])
@@ -126,6 +100,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     lobbyShort,
     boardLabel,
     hireLabel,
+    managerLabel,
     agents,
     thoughts,
     cast,
@@ -140,6 +115,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       lobbyShort,
       boardLabel,
       hireLabel,
+      managerLabel,
       agents,
       thoughts,
       cast,
@@ -172,6 +148,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       lobbyShort: setup.lobbyShort,
       teamBoardLabel: setup.boardLabel,
       hireLabel: setup.hireLabel,
+      managerLabel: setup.managerLabel,
       onPanelChange: (open) => {
         setPanelOpen(open)
         if (!open) {
@@ -187,7 +164,10 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       },
       onSectorClick: (worktreeId, at) => openWorkspaceMenu(worktreeId, at),
       onSpotClick: (spot) => {
-        if (spot === 'automations') {
+        if (spot === 'managerDesk') {
+          setHovered(null)
+          setManagerAt(pointerAt.current)
+        } else if (spot === 'automations') {
           setHovered(null)
           useAppStore.getState().openAutomationsPage()
         } else if (spot === 'reception') {
@@ -279,6 +259,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           const box = event.currentTarget.getBoundingClientRect()
           setDeskAnchor(null)
           setHireAt(null)
+          setManagerAt(null)
           pointerAt.current = { left: event.clientX - box.left, top: event.clientY - box.top }
           buildingRef.current?.pointer(pointerAt.current.left, pointerAt.current.top)
         }}
@@ -341,6 +322,18 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
             : translate('auto.components.agentOffice.reception.loading', 'Opening the office…')}
         </p>
       )}
+      {managerAt && currentFloor.number !== 0 ? (
+        <OfficeManagerHire
+          anchor={managerAt}
+          floor={currentFloor}
+          snapshot={snapshot}
+          onHired={(paneKey) => {
+            setManagerAt(null)
+            setManager(currentFloor.id, paneKey)
+          }}
+          onClose={() => setManagerAt(null)}
+        />
+      ) : null}
       {hireAt ? (
         <HireDeskMenu
           anchor={hireAt}

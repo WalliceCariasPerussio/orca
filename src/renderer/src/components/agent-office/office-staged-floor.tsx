@@ -100,6 +100,7 @@ export function StaffedFloor({
       lobbyShort: 'T',
       teamBoardLabel: 'Equipe',
       hireLabel: 'Vaga',
+      managerLabel: 'Gerente',
       onPanelChange: () => {},
       onFloorChange: () => {},
       onAgentClick: () => {},

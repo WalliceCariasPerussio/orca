@@ -46,8 +46,6 @@ export const LOUNGE_SPOTS: readonly Spot[] = [
   standing(17, 9),
   standing(14, 10),
   standing(17, 10),
-  standing(15, 11),
-  standing(16, 11),
   standing(14, 8),
   standing(17, 8)
 ]
@@ -60,6 +58,18 @@ export const COFFEE_SPOTS: readonly Spot[] = [
 
 /** Where an agent works: the tile it stands on, the point between its feet, and its desk's corner tile. */
 export type DeskSeat = { tile: TilePoint; feet: WorldPoint; desk: TilePoint }
+
+/** The manager's desk, in the corner by the lounge, apart from the rows of desks. */
+const MANAGER_DESK = { col: 14, row: 12 }
+
+export const MANAGER_SEAT: DeskSeat = {
+  tile: { col: MANAGER_DESK.col + 1, row: MANAGER_DESK.row - 1 },
+  feet: {
+    x: (MANAGER_DESK.col + 1) * TILE_SIZE + TILE_SIZE / 2,
+    y: MANAGER_DESK.row * TILE_SIZE + 18
+  },
+  desk: MANAGER_DESK
+}
 
 function hueOf(hex: string | undefined): number {
   const match = /^#?([0-9a-f]{6})$/i.exec(hex ?? '')
@@ -132,7 +142,10 @@ export function createProjectFloorLayout(
       { type: 'COFFEE_TABLE', col: COFFEE_TABLE.col, row: COFFEE_TABLE.row },
       { type: 'PLANT', col: 18, row: 8 },
       { type: 'PLANT_2', col: 17, row: 12 },
-      { type: 'BIN', col: 14, row: 12 }
+      { type: 'BIN', col: 18, row: 13 },
+      { type: 'CUSHIONED_CHAIR_FRONT', col: MANAGER_SEAT.tile.col, row: MANAGER_SEAT.tile.row },
+      { type: 'DESK_FRONT', ...MANAGER_DESK },
+      { type: 'PC_BACK', col: MANAGER_DESK.col + 2, row: MANAGER_DESK.row }
     ],
     `floor-${projectId}`
   )

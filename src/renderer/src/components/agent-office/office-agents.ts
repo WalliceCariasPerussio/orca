@@ -40,6 +40,8 @@ export type OfficeAgent = {
   remoteHost?: string
   /** Its place in an Orca orchestration, when it has one. */
   crew?: OfficeCrewRole
+  /** The floor's manager, who sits at the manager's desk. */
+  manager?: boolean
   /** The agent at a desk that spawned this one; it then stands by that desk instead of its own. */
   parentKey?: string
   /** Running sub-agents without a terminal, standing by this agent's desk. */
@@ -116,12 +118,15 @@ function rootOf(
 export function officeAgentsFrom(
   cards: readonly DashboardCard[],
   staffPets: StaffPets,
-  crewRoles: ReadonlyMap<string, OfficeCrewRole> = new Map()
+  crewRoles: ReadonlyMap<string, OfficeCrewRole> = new Map(),
+  managerKeys: ReadonlySet<string> = new Set()
 ): OfficeAgent[] {
   const byKey = new Map(cards.map((card) => [card.paneKey, card]))
   return cards
     .flatMap((card): OfficeAgent[] => {
-      const parentKey = rootOf(card, byKey)
+      const root = rootOf(card, byKey)
+      // Why: a manager's workers sit at desks of their own, with the task on their badge.
+      const parentKey = root && managerKeys.has(root) ? undefined : root
       if (parentKey && !STANDING_BUCKETS.has(card.bucket)) {
         return []
       }
@@ -148,6 +153,7 @@ export function officeAgentsFrom(
           monitoring: card.bucket === 'working' && card.workingMode === 'monitoring',
           remoteHost: dashboardHostTooltipLabel(card) ?? undefined,
           crew: crewRoles.get(card.paneKey),
+          manager: managerKeys.has(card.paneKey) || undefined,
           parentKey,
           subagents
         }
