@@ -47,6 +47,7 @@ export class FloorCrew {
   private readonly roaming = new Roaming()
   private readonly departures = new Departures()
   private thoughts: OfficeThoughts = new Map()
+  private floorId: string | null = null
 
   constructor(private readonly hireLabel: string) {}
 
@@ -60,6 +61,11 @@ export class FloorCrew {
       this.clear()
       return buildOfficeScene(layoutForFloor(floor, 0), RECEPTIONIST_BLOCKED)
     }
+    // Why: someone walking out belongs to the floor it left; riding to another one leaves them there.
+    if (floor.id !== this.floorId) {
+      this.departures.clear()
+      this.floorId = floor.id
+    }
     this.staff = staffFloor(agents, floor.id, sprites, this.hireLabel)
     const layout = layoutForFloor(floor, this.staff.deskCount)
     const scene = buildOfficeScene(layout, staffTiles(this.staff))
@@ -71,6 +77,7 @@ export class FloorCrew {
 
   clear(): void {
     this.staff = EMPTY_STAFF
+    this.floorId = null
     this.roaming.clear()
     this.departures.clear()
   }
