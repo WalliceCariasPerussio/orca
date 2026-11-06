@@ -42,6 +42,8 @@ export type OfficeAgent = {
   crew?: OfficeCrewRole
   /** The floor's manager, who sits at the manager's desk. */
   manager?: boolean
+  /** Its workspace was put to sleep: its terminal is closed and it dozes at its desk until woken. */
+  asleep?: boolean
   /** The agent at a desk that spawned this one; it then stands by that desk instead of its own. */
   parentKey?: string
   /** Running sub-agents without a terminal, standing by this agent's desk. */
@@ -58,12 +60,17 @@ const NAP_AFTER_MS = 20 * 60_000
 
 /** True once an idle agent has been idle long enough to doze, at a time in epoch milliseconds. */
 export function isNapping(agent: OfficeAgent, time: number): boolean {
-  return agent.bucket === 'idle' && agent.since > 0 && time - agent.since >= NAP_AFTER_MS
+  return (
+    agent.bucket === 'idle' &&
+    !agent.asleep &&
+    agent.since > 0 &&
+    time - agent.since >= NAP_AFTER_MS
+  )
 }
 
 /** How long until an idle agent dozes off; Infinity if it never will or already does. */
 export function untilNap(agent: OfficeAgent, time: number): number {
-  if (agent.bucket !== 'idle' || agent.since <= 0 || isNapping(agent, time)) {
+  if (agent.bucket !== 'idle' || agent.asleep || agent.since <= 0 || isNapping(agent, time)) {
     return Number.POSITIVE_INFINITY
   }
   return agent.since + NAP_AFTER_MS - time
@@ -167,7 +174,8 @@ export function officeAgentsFrom(
 
 export function tallyByFloor(agents: readonly OfficeAgent[]): Map<string, FloorTally> {
   const tallies = new Map<string, FloorTally>()
-  for (const agent of agents) {
+  // Why: a sleeping agent is not running, so the elevator does not count it among the idle ones.
+  for (const agent of agents.filter(({ asleep }) => !asleep)) {
     const tally = tallies.get(agent.floorId) ?? { attention: 0, working: 0, done: 0, idle: 0 }
     tally[agent.bucket]++
     tallies.set(agent.floorId, tally)

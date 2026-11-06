@@ -97,7 +97,13 @@ export function deskAgentDrawables(
       bob = Math.floor(now / BOB_MS) % 2
       holdMs = Math.min(holdMs, BOB_MS - (now % BOB_MS))
     }
-    const pose = napping ? 'napping' : agent.monitoring ? 'monitoring' : null
+    const pose = agent.asleep
+      ? 'asleep'
+      : napping
+        ? 'napping'
+        : agent.monitoring
+          ? 'monitoring'
+          : null
     const bubble = getCachedSprite(bubbleFor(agent.bucket, agent.verdict, pose), zoom)
     const x = offsetX + (raised.x - BUBBLE_HALF_WIDTH) * zoom
     const y = offsetY + (raised.y - FIGURE_HEIGHT - BUBBLE_HEIGHT - bob) * zoom

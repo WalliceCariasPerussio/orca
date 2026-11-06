@@ -41,12 +41,12 @@ export type OfficeTarget =
   | { kind: 'sector'; worktreeId: string; worktreeName: string; tip: WorldPoint }
   | { kind: 'spot'; spot: SpotHit }
 
-/** Agents held at their desk because their sub-agents stand there with them. */
+/** Agents held at their desk: sub-agents stand there with them, or they sleep there with their workspace. */
 function pinnedKeys(agents: readonly OfficeAgent[]): Set<string> {
   return new Set(
     agents.flatMap((agent) => [
       ...(agent.parentKey ? [agent.parentKey] : []),
-      ...(agent.subagents.length > 0 || agent.manager ? [agent.key] : [])
+      ...(agent.subagents.length > 0 || agent.manager || agent.asleep ? [agent.key] : [])
     ])
   )
 }

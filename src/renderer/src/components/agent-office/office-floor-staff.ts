@@ -96,7 +96,8 @@ export function staffFloor(
       label: agent.worktreeName,
       color: sectorColor(agent.worktreeId),
       review: agent.review,
-      status: agent.workspaceStatus
+      status: agent.workspaceStatus,
+      asleep: agent.asleep
     })),
     ...vacant.map(({ seat, workspace }) => ({
       desk: seat.desk,
@@ -104,7 +105,8 @@ export function staffFloor(
       label: workspace.name,
       color: sectorColor(workspace.worktreeId),
       review: workspace.review,
-      status: workspace.status
+      status: workspace.status,
+      asleep: workspace.asleep
     })),
     ...freeDesks.map((seat) => ({ desk: seat.desk, label: labels.hire, color: null })),
     {

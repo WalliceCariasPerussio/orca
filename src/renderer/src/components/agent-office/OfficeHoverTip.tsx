@@ -26,6 +26,9 @@ function bucketLabel(bucket: DashboardBucket): string {
 
 function stateLabel(agent: OfficeAgent, time: number): string {
   const { bucket, verdict } = agent
+  if (agent.asleep) {
+    return translate('auto.components.agentOffice.building.asleep', 'Asleep with its workspace')
+  }
   if (isNapping(agent, time)) {
     return translate('auto.components.agentOffice.building.napping', 'Dozing')
   }
@@ -69,7 +72,7 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
     return `spot:${hover.spot}:${place}`
   }
   const { agent } = hover
-  const state = `${agent.bucket}:${agent.verdict ?? ''}:${agent.monitoring ? 'm' : ''}:${agent.manager ? 'boss' : ''}`
+  const state = `${agent.bucket}:${agent.verdict ?? ''}:${agent.monitoring ? 'm' : ''}:${agent.manager ? 'boss' : ''}:${agent.asleep ? 'z' : ''}`
   const workspace = `${agent.worktreeName}:${agent.workspaceStatus?.label ?? ''}:${agent.review?.number ?? ''}${agent.review?.state ?? ''}`
   return `agent:${agent.key}:${state}:${agent.name}:${workspace}:${agent.remoteHost ?? ''}:${crewRoleKey(agent.crew)}:${place}`
 }
@@ -132,10 +135,12 @@ export default function OfficeHoverTip({
               ? ` · ${formatUiRelativeTime(hover.agent.since - hover.seenAt)}`
               : ''}{' '}
             ·{' '}
-            {translate(
-              'auto.components.agentOffice.building.openTerminal',
-              'click to open the terminal'
-            )}
+            {hover.agent.asleep
+              ? translate('auto.components.agentOffice.building.wake', 'click to wake it up')
+              : translate(
+                  'auto.components.agentOffice.building.openTerminal',
+                  'click to open the terminal'
+                )}
           </p>
           {asked ? (
             <p className="mt-1 line-clamp-2 border-t border-border pt-1">

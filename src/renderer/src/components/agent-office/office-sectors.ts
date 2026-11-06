@@ -22,6 +22,8 @@ export type DeskPlaque = {
   review?: DashboardCardReview
   /** The workspace's column on Orca's board, shown as a sticky note on the desk. */
   status?: OfficeWorkspaceStatus
+  /** Nothing runs in the workspace, as Orca's moon says; its plaque dims like a desk lamp off. */
+  asleep?: boolean
 }
 
 /** The plaque on a desk's front panel, in world pixels from the desk's corner. */
@@ -35,6 +37,7 @@ const REVIEW_COLORS: Record<DashboardCardReview['state'], string> = {
   closed: '#f85149'
 }
 const FONT_SIZE = 5
+const ASLEEP_ALPHA = 0.5
 /** Desks sort at their bottom edge; the plaque sits just in front of its desk. */
 const DESK_DEPTH = 2 * TILE_SIZE + 0.6
 
@@ -97,6 +100,8 @@ function drawPlaque(
   const y = offsetY + (plaque.desk.row * TILE_SIZE + PLAQUE.y) * zoom
   const width = PLAQUE.width * zoom
   const height = PLAQUE.height * zoom
+  context.save()
+  context.globalAlpha = plaque.asleep ? ASLEEP_ALPHA : 1
   context.fillStyle = SIGN_BORDER
   context.fillRect(x, y, width, height)
   context.fillStyle = SIGN_FILL
@@ -121,6 +126,7 @@ function drawPlaque(
   }
   context.fillStyle = SIGN_TEXT
   context.fillText(fitted(context, plaque.label, right - textX), textX, middle)
+  context.restore()
 }
 
 export function plaqueDrawables(

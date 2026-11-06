@@ -82,7 +82,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     () => thoughtsFrom(snapshot.cards, statusByPaneKey),
     [snapshot.cards, statusByPaneKey]
   )
-  const dressedByKind = useOfficeAgents(snapshot.cards, staffPets, managerKeys)
+  const dressedByKind = useOfficeAgents(snapshot, staffPets, managerKeys)
   const agents = useTeamPets(dressedByKind, floorTeams)
   const workspaces = useFloorWorkspaces(snapshot.workspaces)
   const tallies = useMemo(() => tallyByFloor(agents), [agents])

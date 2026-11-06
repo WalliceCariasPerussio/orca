@@ -12,6 +12,7 @@ const NEEDS_YOU = '#D9483B'
 const RESTING = '#8A93A3'
 const FAILED = '#C2410C'
 const WATCHING = '#2F6FDB'
+const ASLEEP = '#5B63B7'
 
 // Why: pixel-agents' waiting bubble is the frame; the glyph inside tells the state at a glance.
 function withGlyph(color: string, pixels: [number, number][]): SpriteData {
@@ -89,6 +90,27 @@ const NAPPING_BUBBLE = withGlyph(RESTING, [
   [4, 7]
 ])
 
+// Why: Orca marks a slept workspace with a moon; a crescent tells it apart from a doze's Zz.
+const ASLEEP_BUBBLE = withGlyph(ASLEEP, [
+  [4, 2],
+  [5, 2],
+  [6, 2],
+  [3, 3],
+  [4, 3],
+  [5, 3],
+  [3, 4],
+  [4, 4],
+  [3, 5],
+  [4, 5],
+  [3, 6],
+  [4, 6],
+  [5, 6],
+  [4, 7],
+  [5, 7],
+  [6, 7],
+  [7, 3]
+])
+
 // Why: an open eye reads as "watching" next to the typing dots of real work.
 const MONITORING_BUBBLE = withGlyph(WATCHING, [
   [4, 3],
@@ -107,8 +129,8 @@ const MONITORING_BUBBLE = withGlyph(WATCHING, [
   [6, 7]
 ])
 
-/** Dozing off when idle, or only watching background tasks while working. */
-export type BubblePose = 'napping' | 'monitoring' | null
+/** Asleep with its workspace, dozing off when idle, or only watching background tasks while working. */
+export type BubblePose = 'asleep' | 'napping' | 'monitoring' | null
 
 /** Sprite shown over an agent's head; a turn that failed or was stopped shows that instead of ✓. */
 export function bubbleFor(
@@ -116,6 +138,9 @@ export function bubbleFor(
   verdict?: OfficeVerdict,
   pose: BubblePose = null
 ): SpriteData {
+  if (pose === 'asleep') {
+    return ASLEEP_BUBBLE
+  }
   if (pose === 'napping') {
     return NAPPING_BUBBLE
   }

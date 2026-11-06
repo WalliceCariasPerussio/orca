@@ -3,6 +3,10 @@ import { useAppStore } from '@/store'
 import type { DashboardCard, DashboardRevealAgentArgs } from '../../../../shared/dashboard-snapshot'
 import { revealDashboardAgent } from '../dashboard/reveal-dashboard-agent'
 import { mountAgentTerminal } from './office-agent-launch'
+import { wakeSleepers } from './office-sleepers'
+
+/** How long a woken agent's window waits for it to come back before giving up. */
+const WAKE_OPEN_MS = 30_000
 
 export type OfficeAgentWindow = {
   /** The agent shown in the window; null keeps it closed. */
@@ -43,9 +47,15 @@ export function useOfficeAgentWindow(cards: readonly DashboardCard[]): OfficeAge
   }, [cards, opened])
 
   const clickAcked = useRef<{ paneKey: string; stateChangedAt: number } | null>(null)
+  const waking = useRef<{ paneKey: string; until: number } | null>(null)
   const open = useCallback((paneKey: string) => {
     const found = cardsRef.current.find((c) => c.paneKey === paneKey)
     if (!found) {
+      // Why: a sleeping agent has no card; wake it, and its window opens once it is back.
+      const record = useAppStore.getState().sleepingAgentSessionsByPaneKey[paneKey]
+      if (record && wakeSleepers(record.worktreeId, paneKey) > 0) {
+        waking.current = { paneKey, until: Date.now() + WAKE_OPEN_MS }
+      }
       return
     }
     // Why: an agent started in the background has no live terminal until its tab mounts.
@@ -56,6 +66,17 @@ export function useOfficeAgentWindow(cards: readonly DashboardCard[]): OfficeAge
     clickAcked.current = { paneKey, stateChangedAt: found.stateChangedAt }
     setOpened(found)
   }, [])
+
+  useEffect(() => {
+    const woken = waking.current
+    const back = woken && cards.find((c) => c.paneKey === woken.paneKey)
+    if (woken && (back || Date.now() > woken.until)) {
+      waking.current = null
+      if (back) {
+        setOpened(back)
+      }
+    }
+  }, [cards])
 
   // Why: a state change seen in the open window is read, so the agent does not turn unseen behind it.
   useEffect(() => {
