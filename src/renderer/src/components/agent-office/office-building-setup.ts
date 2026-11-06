@@ -31,6 +31,6 @@ export type OfficeBuildingSetup = {
 /** What the pointer rests on and where its label goes, in CSS pixels. */
 export type OfficeHover = { left: number; top: number } & (
   | { kind: 'agent'; agent: OfficeAgent; seenAt: number }
-  | { kind: 'spot'; spot: OfficeSpotId }
+  | { kind: 'spot'; spot: OfficeSpotId; seenAt: number }
   | { kind: 'sector'; worktreeName: string }
 )

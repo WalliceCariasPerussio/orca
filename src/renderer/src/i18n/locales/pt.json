@@ -20051,6 +20051,13 @@
         "sector": {
           "hint": "clique para o menu do workspace: status, notas, suspender…",
           "hint": "clique para o menu do workspace: status, notas, suspender…"
+        },
+        "automations": {
+          "none": "Nenhuma neste projeto ainda.",
+          "next": "próxima {{value0}}",
+          "paused": "pausada",
+          "more": "e mais {{value0}}",
+          "hint": "clique para abrir as Automações"
         }
       }
     },

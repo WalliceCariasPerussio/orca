@@ -67,7 +67,8 @@ export function StaffedFloor({
   then,
   thenAfterMs = 200,
   visit,
-  thoughts
+  thoughts,
+  automations = 0
 }: {
   agents?: OfficeAgent[]
   /** Agents a moment later, to catch the office reacting to a change. */
@@ -78,6 +79,8 @@ export function StaffedFloor({
   visit?: string
   /** What the agents think out loud. */
   thoughts?: OfficeThoughts
+  /** How many automations the floor's project has, for its wall calendar. */
+  automations?: number
 }): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { cast } = useOfficeCast(Object.values(DEFAULT_STAFF_PETS))
@@ -105,6 +108,7 @@ export function StaffedFloor({
     })
     building.setAgents(agents)
     building.setThoughts(thoughts ?? new Map())
+    building.setAutomationCounts(new Map([['mesa', automations]]))
     building.attach(canvas, 960, 600, 1)
     const later = window.setTimeout(() => {
       if (then) {

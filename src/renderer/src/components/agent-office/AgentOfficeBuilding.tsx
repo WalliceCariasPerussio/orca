@@ -14,6 +14,7 @@ import ReceptionDesk from './ReceptionDesk'
 import OfficeWorkspaceMenu, { type OfficeWorkspaceMenuAt } from './OfficeWorkspaceMenu'
 import StaffPetsPanel from './StaffPetsPanel'
 import { officeAgentsFrom, tallyByFloor } from './office-agents'
+import { automationCounts, useProjectAutomations } from './office-automations'
 import { OfficeBuilding } from './office-building'
 import type { OfficeHover } from './office-building-setup'
 import { useFloorTeams } from './office-floor-teams'
@@ -70,6 +71,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   ])
 
   const snapshot = useLiveDashboardSnapshot()
+  const projectAutomations = useProjectAutomations()
   const statusByPaneKey = useAppStore((s) => s.agentStatusByPaneKey)
   const thoughts = useMemo(
     () => thoughtsFrom(snapshot.cards, statusByPaneKey),
@@ -178,7 +180,10 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       },
       onSectorClick: (worktreeId, at) => openWorkspaceMenu(worktreeId, at),
       onSpotClick: (spot) => {
-        if (spot === 'reception') {
+        if (spot === 'automations') {
+          setHovered(null)
+          useAppStore.getState().openAutomationsPage()
+        } else if (spot === 'reception') {
           setDeskAnchor(buildingRef.current?.receptionistAnchor() ?? null)
         } else if (spot === 'freeDesk') {
           setHovered(null)
@@ -241,6 +246,10 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     buildingRef.current?.setThoughts(thoughts)
   }, [thoughts])
 
+  useEffect(() => {
+    buildingRef.current?.setAutomationCounts(automationCounts(projectAutomations))
+  }, [projectAutomations, castReady])
+
   const currentFloor = floors.find((f) => f.id === floorId) ?? floors[0]
   const hoveredKey = hovered?.kind === 'agent' ? hovered.agent.key : null
   const hoveredCard = hoveredKey ? snapshot.cards.find((c) => c.paneKey === hoveredKey) : undefined
@@ -296,6 +305,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           thought={hoveredKey ? thoughts.get(hoveredKey) : undefined}
           model={hoveredKey ? statusByPaneKey[hoveredKey]?.model : undefined}
           asked={hoveredCard?.lastUserMessage}
+          automations={projectAutomations.get(currentFloor.id)}
         />
       ) : null}
       {cast ? (

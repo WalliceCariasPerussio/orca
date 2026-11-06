@@ -19450,6 +19450,13 @@
         "sector": {
           "hint": "click for this workspace's menu: status, notes, sleep…",
           "hint": "click for this workspace's menu: status, notes, sleep…"
+        },
+        "automations": {
+          "none": "None for this project yet.",
+          "next": "next {{value0}}",
+          "paused": "paused",
+          "more": "and {{value0}} more",
+          "hint": "click to open Automations"
         }
       }
     },

@@ -1,6 +1,8 @@
 import { translate } from '@/i18n/i18n'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
 import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
+import type { Automation } from '../../../../shared/automations-types'
+import AutomationsTipBody from './AutomationsTipBody'
 import type { DashboardBucket, DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import { isNapping, type OfficeAgent } from './office-agents'
 import type { OfficeHover } from './office-building-setup'
@@ -48,6 +50,8 @@ function reviewLabel(review: DashboardCardReview): string {
   }
 }
 
+const NO_AUTOMATIONS: readonly Automation[] = []
+
 /** Same label in the same place: keeps the tip still as the pointer moves, but not after a resize or a new state. */
 export function hoverKey(hover: OfficeHover | null | undefined): string | null {
   if (!hover) {
@@ -67,7 +71,8 @@ export default function OfficeHoverTip({
   hover,
   thought,
   model,
-  asked
+  asked,
+  automations = NO_AUTOMATIONS
 }: {
   hover: OfficeHover
   /** What the agent under the pointer thinks, in full. */
@@ -76,6 +81,8 @@ export default function OfficeHoverTip({
   model?: string
   /** What you last asked it. */
   asked?: string
+  /** The floor's automations, for its wall calendar. */
+  automations?: readonly Automation[]
 }): React.JSX.Element {
   return (
     <div
@@ -133,6 +140,8 @@ export default function OfficeHoverTip({
             )}
           </p>
         </>
+      ) : hover.spot === 'automations' ? (
+        <AutomationsTipBody automations={automations} seenAt={hover.seenAt} />
       ) : hover.spot === 'freeDesk' ? (
         <>
           <p className="truncate font-medium">

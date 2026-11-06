@@ -2,9 +2,10 @@ import { FIGURE_HEIGHT } from './office-figures'
 import type { TilePoint, WorldPoint } from './office-walker'
 import { TEAM_BOARD, TEAM_BOARD_FRONT_TILE } from './project-floor-layout'
 import { RECEPTION_COUNTER_FRONT_TILE, RECEPTIONIST_FEET } from './reception-layout'
+import { onWallCalendar, WALL_CALENDAR, WALL_CALENDAR_FRONT_TILE } from './office-wall-calendar'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
-export type OfficeSpotId = 'reception' | 'teamBoard' | 'freeDesk'
+export type OfficeSpotId = 'reception' | 'teamBoard' | 'freeDesk' | 'automations'
 
 /** A clicked spot: where you walk to use it, and where its hover label points. */
 export type SpotHit = {
@@ -47,6 +48,13 @@ const SPOTS: readonly OfficeSpot[] = [
       x: (TEAM_BOARD.col + TEAM_BOARD.tiles / 2) * TILE_SIZE,
       y: TEAM_BOARD.row * TILE_SIZE + 7
     }
+  },
+  {
+    id: 'automations',
+    inLobby: false,
+    front: WALL_CALENDAR_FRONT_TILE,
+    contains: onWallCalendar,
+    tip: { x: WALL_CALENDAR.x + WALL_CALENDAR.width / 2, y: WALL_CALENDAR.y }
   }
 ]
 

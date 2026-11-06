@@ -1,4 +1,5 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
+import { makeAutomation } from '../automations/automations-page-fixtures'
 import type { DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import HireDeskMenu, { type HireChoice } from './HireDeskMenu'
 import OfficeHoverTip from './OfficeHoverTip'
@@ -211,6 +212,33 @@ export const hireMenu = defineFixture({
         choices={HIRE_CHOICES}
         onNewWorkspace={() => {}}
         onClose={() => {}}
+      />
+    </div>
+  )
+})
+
+export const wallCalendar = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => <StaffedFloor automations={3} />,
+  interact: (frame) => waitFor(frame, 'canvas[data-ready]')
+})
+
+const HOUR = 60 * 60_000
+
+const AUTOMATIONS = [
+  makeAutomation({ id: 'a1', name: 'Testes da madrugada', nextRunAt: NOW + 7 * HOUR }),
+  makeAutomation({ id: 'a2', name: 'Resumo dos PRs', nextRunAt: NOW + 2 * HOUR }),
+  makeAutomation({ id: 'a3', name: 'Atualizar dependências', enabled: false })
+]
+
+export const automationsTip = defineFixture({
+  width: 700,
+  render: () => (
+    <div className="relative h-48">
+      <OfficeHoverTip
+        hover={{ kind: 'spot', spot: 'automations', seenAt: NOW, left: 350, top: 170 }}
+        automations={AUTOMATIONS}
       />
     </div>
   )

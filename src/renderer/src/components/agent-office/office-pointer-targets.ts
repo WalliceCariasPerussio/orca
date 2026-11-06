@@ -22,7 +22,7 @@ export function hoverOf(
   }
   return target.kind === 'sector'
     ? { kind: 'sector', worktreeName: target.worktreeName, ...at }
-    : { kind: 'spot', spot: target.spot.id, ...at }
+    : { kind: 'spot', spot: target.spot.id, seenAt: Date.now(), ...at }
 }
 
 /** The workspace of the agent or plaque under the pointer, whose menu a right-click opens. */

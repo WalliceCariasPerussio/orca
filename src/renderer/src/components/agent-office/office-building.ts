@@ -38,6 +38,7 @@ export class OfficeBuilding {
   private agents: OfficeAgent[] = []
   private readonly crew: FloorCrew
   private staffSprites: ReadonlyMap<string, PetSprite>
+  private automations: ReadonlyMap<string, number> = new Map()
 
   private readonly cycle = new WalkCycle()
   private readonly visits = new AgentVisit({
@@ -125,6 +126,12 @@ export class OfficeBuilding {
     if (this.crew.setThoughts(thoughts)) {
       this.loop.invalidate()
     }
+  }
+
+  /** How many automations each project has, for its floor's wall calendar. */
+  setAutomationCounts(counts: ReadonlyMap<string, number>): void {
+    this.automations = counts
+    this.loop.invalidate()
   }
 
   setStaffSprites(sprites: ReadonlyMap<string, PetSprite>): void {
@@ -308,7 +315,8 @@ export class OfficeBuilding {
           ? { sprite: receptionist, frame: atDesk.frame, feet: RECEPTIONIST_FEET }
           : null,
       staff: staff.drawables,
-      time: Date.now()
+      time: Date.now(),
+      automations: this.floor.number === 0 ? null : (this.automations.get(this.floor.id) ?? 0)
     })
     const clockMs = untilNextMinute(Date.now())
     return Math.min(

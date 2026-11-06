@@ -20,6 +20,7 @@ import {
   type SignIcon
 } from './office-scene'
 import type { WorldPoint } from './office-walker'
+import { drawWallCalendar } from './office-wall-calendar'
 import { drawWallClock } from './office-wall-clock'
 import { TEAM_BOARD } from './project-floor-layout'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
@@ -58,6 +59,8 @@ export type BuildingFrame = {
   staff: DepthDrawable[]
   /** Local time the wall clock shows, in epoch milliseconds. */
   time: number
+  /** The project's automations, counted on its floor's wall calendar; null in the lobby. */
+  automations: number | null
 }
 
 export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: BuildingFrame): void {
@@ -96,6 +99,9 @@ export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: Buil
   drawWindows(context, projection, daylight)
   drawWallSign(context, projection, { ...ROOM_SIGN, text: frame.sign, icon: frame.signIcon })
   drawWallClock(context, projection, frame.time)
+  if (frame.automations !== null) {
+    drawWallCalendar(context, projection, frame.time, frame.automations)
+  }
   if (frame.boardLabel) {
     drawBoardLabel(context, projection, frame.boardLabel)
   }
