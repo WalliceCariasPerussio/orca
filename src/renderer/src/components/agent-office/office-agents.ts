@@ -1,3 +1,4 @@
+import { dashboardHostTooltipLabel } from '../dashboard-popout/DashboardHostBadge'
 import type {
   DashboardBucket,
   DashboardCard,
@@ -31,6 +32,8 @@ export type OfficeAgent = {
   verdict?: OfficeVerdict
   /** Working, but only keeping an eye on background tasks (Orca's "monitoring"). */
   monitoring?: boolean
+  /** The SSH or remote Orca host it runs on, as the Agent Dashboard names it; unset when local. */
+  remoteHost?: string
   /** The agent at a desk that spawned this one; it then stands by that desk instead of its own. */
   parentKey?: string
   /** Running sub-agents without a terminal, standing by this agent's desk. */
@@ -130,6 +133,7 @@ export function officeAgentsFrom(
           since: card.stateChangedAt,
           verdict: endedBadly(card),
           monitoring: card.bucket === 'working' && card.workingMode === 'monitoring',
+          remoteHost: dashboardHostTooltipLabel(card) ?? undefined,
           parentKey,
           subagents
         }

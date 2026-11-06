@@ -1,6 +1,7 @@
-import { createElement } from 'react'
+import { createElement, type ReactElement } from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
+import { Server } from 'lucide-react'
 import { AgentTypeIcon } from '@/lib/agent-type-icon'
 import { BUBBLE_FILL, BUBBLE_OUTLINE } from './office-bubbles'
 
@@ -29,12 +30,12 @@ function svgImageUrl(markup: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(inked)}`
 }
 
-// Why: Orca's own agent icons, rendered the way React recommends on the client: most are an SVG,
+// Why: Orca's own icons, rendered the way React recommends on the client: most are an SVG,
 // the rest a favicon <img> whose file loads as it is.
-function iconUrl(agentType: string): string | null {
+function iconUrl(element: ReactElement): string | null {
   const host = document.createElement('div')
   const root = createRoot(host)
-  flushSync(() => root.render(createElement(AgentTypeIcon, { agentType, size: ICON_PX })))
+  flushSync(() => root.render(element))
   const icon = host.firstElementChild
   const url =
     icon instanceof HTMLImageElement
@@ -46,25 +47,25 @@ function iconUrl(agentType: string): string | null {
   return url
 }
 
-function loadIcon(agentType: string): void {
-  icons.set(agentType, 'loading')
+function loadIcon(key: string, element: () => ReactElement): void {
+  icons.set(key, 'loading')
   // Why: the frame loop may ask mid-render elsewhere; flushSync needs its own task.
   window.setTimeout(() => {
-    const url = iconUrl(agentType)
+    const url = iconUrl(element())
     if (!url) {
-      icons.set(agentType, 'failed')
+      icons.set(key, 'failed')
       return
     }
     const image = new Image()
     image.src = url
     image.decode().then(
       () => {
-        icons.set(agentType, image)
+        icons.set(key, image)
         for (const listener of readyListeners) {
           listener()
         }
       },
-      () => icons.set(agentType, 'failed')
+      () => icons.set(key, 'failed')
     )
   }, 0)
 }
@@ -90,22 +91,39 @@ function paintBadge(icon: HTMLImageElement, zoom: number): HTMLCanvasElement {
   return canvas
 }
 
-/** The agent-kind badge at this zoom, or null while its icon is still loading. */
-export function agentBadge(agentType: string, zoom: number): HTMLCanvasElement | null {
-  const icon = icons.get(agentType)
+function badgeFor(
+  key: string,
+  element: () => ReactElement,
+  zoom: number
+): HTMLCanvasElement | null {
+  const icon = icons.get(key)
   if (icon === undefined) {
-    loadIcon(agentType)
+    loadIcon(key, element)
     return null
   }
   if (typeof icon === 'string') {
     return null
   }
-  const key = `${agentType}:${zoom}`
-  const cached = badges.get(key)
+  const sized = `${key}:${zoom}`
+  const cached = badges.get(sized)
   if (cached) {
     return cached
   }
   const badge = paintBadge(icon, zoom)
-  badges.set(key, badge)
+  badges.set(sized, badge)
   return badge
+}
+
+/** The agent-kind badge at this zoom, or null while its icon is still loading. */
+export function agentBadge(agentType: string, zoom: number): HTMLCanvasElement | null {
+  return badgeFor(
+    `agent:${agentType}`,
+    () => createElement(AgentTypeIcon, { agentType, size: ICON_PX }),
+    zoom
+  )
+}
+
+/** The server badge the Agent Dashboard puts on an agent running on an SSH or remote Orca host. */
+export function remoteHostBadge(zoom: number): HTMLCanvasElement | null {
+  return badgeFor('host:remote', () => createElement(Server, { size: ICON_PX }), zoom)
 }

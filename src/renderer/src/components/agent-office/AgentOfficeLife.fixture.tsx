@@ -115,3 +115,41 @@ export const monitoring = defineFixture({
     await untilCloud()
   }
 })
+
+const REMOTE_HOSTS = new Map([
+  ['pane-1', 'SSH host · build-box'],
+  ['pane-4', 'SSH host · build-box'],
+  ['pane-5', 'Remote Orca host · notebook']
+])
+
+export const remoteHosts = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => (
+    <StaffedFloor
+      agents={fakeAgents().map((agent) => ({ ...agent, remoteHost: REMOTE_HOSTS.get(agent.key) }))}
+    />
+  ),
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+})
+
+export const remoteHostTip = defineFixture({
+  width: 700,
+  render: () => (
+    <div className="relative h-40">
+      <OfficeHoverTip
+        hover={{
+          kind: 'agent',
+          agent: { ...fakeAgents()[4], remoteHost: 'SSH host · build-box' },
+          seenAt: NOW,
+          left: 350,
+          top: 130
+        }}
+        thought="Rodando pnpm test"
+      />
+    </div>
+  )
+})

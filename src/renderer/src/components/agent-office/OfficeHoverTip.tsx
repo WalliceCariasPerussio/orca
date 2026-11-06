@@ -83,6 +83,9 @@ export default function OfficeHoverTip({
               ? ` · ${reviewLabel(hover.agent.review)} #${hover.agent.review.number}`
               : ''}
           </p>
+          {hover.agent.remoteHost ? (
+            <p className="truncate text-muted-foreground">{hover.agent.remoteHost}</p>
+          ) : null}
           <p className="text-muted-foreground">
             {stateLabel(hover.agent, hover.seenAt)}
             {hover.agent.since > 0
