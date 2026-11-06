@@ -17,6 +17,7 @@ import type { AgentPermissionGlobalSettings } from './agent-launch/permissions/t
 import type { TerminalColorOverrideGlobalSettings } from './terminal-themes/terminal-color-overrides'
 import type { WindowMaterialSettings } from './window-material'
 import type { EditorSaveSettings } from './editor-save-settings'
+import type { NestedWorkerDepthSettings } from './nested-worker-depth'
 import type { AgentOfficeSettings } from './agent-office-settings'
 
 /** Settings groups owned by their feature modules and composed into GlobalSettings. */
@@ -39,4 +40,5 @@ export type GlobalSettingsBase = ClaudeAgentViewSettings &
   WindowMaterialSettings &
   EditorSaveSettings &
   BrowserPasswordsGlobalSettings &
+  NestedWorkerDepthSettings &
   AgentOfficeSettings
