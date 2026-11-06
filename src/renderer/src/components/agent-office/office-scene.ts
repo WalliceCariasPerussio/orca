@@ -35,15 +35,21 @@ export type DepthDrawable = {
   draw: (context: CanvasRenderingContext2D) => void
 }
 
+/** Drawn before a wall sign's text: an emoji as it is, or any other icon as an image. */
+export type SignIcon = { image: HTMLImageElement } | { emoji: string }
+
 export type WallSign = {
   col: number
   widthTiles: number
   text: string
+  icon?: SignIcon | null
 }
 
 const SIGN_TOP = 7
 const SIGN_HEIGHT = 13
 const SIGN_FONT_SIZE = 7
+const SIGN_ICON_SIZE = 7
+const SIGN_ICON_GAP = 3
 export const SIGN_FILL = '#2f3242'
 export const SIGN_BORDER = '#737c8d'
 export const SIGN_TEXT = '#f3ecd9'
@@ -148,10 +154,32 @@ export function drawWallSign(
   context.fillRect(x + zoom, y + zoom, width - 2 * zoom, height - 2 * zoom)
   context.fillStyle = SIGN_TEXT
   context.font = `700 ${SIGN_FONT_SIZE * zoom}px ui-monospace, "Cascadia Mono", Consolas, monospace`
-  context.textAlign = 'center'
   context.textBaseline = 'middle'
   context.letterSpacing = `${zoom}px`
-  context.fillText(sign.text, x + width / 2, y + height / 2 + zoom / 2, width - 4 * zoom)
+  const middle = y + height / 2 + zoom / 2
+  const { icon } = sign
+  if (!icon) {
+    context.textAlign = 'center'
+    context.fillText(sign.text, x + width / 2, middle, width - 4 * zoom)
+    context.letterSpacing = '0px'
+    return
+  }
+  // Why: icon and name are centered together, the name shrinking first when the sign is short.
+  context.textAlign = 'left'
+  const iconWidth = 'emoji' in icon ? context.measureText(icon.emoji).width : SIGN_ICON_SIZE * zoom
+  const gap = SIGN_ICON_GAP * zoom
+  const room = width - 4 * zoom - iconWidth - gap
+  const textWidth = Math.min(context.measureText(sign.text).width, room)
+  const left = x + (width - iconWidth - gap - textWidth) / 2
+  if ('emoji' in icon) {
+    context.fillText(icon.emoji, left, middle)
+  } else {
+    const side = SIGN_ICON_SIZE * zoom
+    context.imageSmoothingEnabled = true
+    context.drawImage(icon.image, left, y + (height - side) / 2, side, side)
+    context.imageSmoothingEnabled = false
+  }
+  context.fillText(sign.text, left + iconWidth + gap, middle, room)
   context.letterSpacing = '0px'
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { Building2, X } from 'lucide-react'
+import { RepoIconGlyph } from '../repo/repo-icon'
 import { Button } from '../ui/button'
 import { translate } from '@/i18n/i18n'
 import type { FloorTally } from './office-agents'
@@ -103,6 +104,16 @@ export default function ElevatorPanel({
             <span className="w-6 shrink-0 text-center font-mono text-xs text-muted-foreground tabular-nums">
               {floorIndicator(floor, lobbyShort)}
             </span>
+            {floor.number === 0 ? (
+              <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
+            ) : (
+              <RepoIconGlyph
+                repoIcon={floor.repoIcon}
+                color={floor.badgeColor}
+                className="size-4 shrink-0"
+                iconClassName="size-3.5"
+              />
+            )}
             <span className="min-w-0 truncate">{floor.name}</span>
             <FloorTallyChips tally={tallies.get(floor.id)} />
           </button>

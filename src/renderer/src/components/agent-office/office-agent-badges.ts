@@ -36,7 +36,8 @@ function iconUrl(element: ReactElement): string | null {
   const host = document.createElement('div')
   const root = createRoot(host)
   flushSync(() => root.render(element))
-  const icon = host.firstElementChild
+  // Why: some icons come wrapped in a span, like the project icon.
+  const icon = host.querySelector('svg, img')
   const url =
     icon instanceof HTMLImageElement
       ? icon.getAttribute('src')
@@ -91,17 +92,23 @@ function paintBadge(icon: HTMLImageElement, zoom: number): HTMLCanvasElement {
   return canvas
 }
 
-function badgeFor(
-  key: string,
-  element: () => ReactElement,
-  zoom: number
-): HTMLCanvasElement | null {
+/** An Orca icon drawn into an image for the canvas, or null while it loads or when it cannot. */
+export function orcaIcon(key: string, element: () => ReactElement): HTMLImageElement | null {
   const icon = icons.get(key)
   if (icon === undefined) {
     loadIcon(key, element)
     return null
   }
-  if (typeof icon === 'string') {
+  return typeof icon === 'string' ? null : icon
+}
+
+function badgeFor(
+  key: string,
+  element: () => ReactElement,
+  zoom: number
+): HTMLCanvasElement | null {
+  const icon = orcaIcon(key, element)
+  if (!icon) {
     return null
   }
   const sized = `${key}:${zoom}`

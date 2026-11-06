@@ -1,3 +1,4 @@
+import type { RepoIcon } from '../../../../shared/repo-icon'
 import type { Repo } from '../../../../shared/repo-types'
 import type { OfficeAgent } from './office-agents'
 import { createProjectFloorLayout } from './project-floor-layout'
@@ -13,10 +14,12 @@ export type OfficeFloor = {
   number: number
   name: string
   badgeColor?: string
+  /** The project's icon in the sidebar; unset shows Orca's folder. */
+  repoIcon?: RepoIcon | null
 }
 
 export function buildFloors(
-  repos: readonly Pick<Repo, 'id' | 'displayName' | 'badgeColor'>[],
+  repos: readonly Pick<Repo, 'id' | 'displayName' | 'badgeColor' | 'repoIcon'>[],
   lobbyName: string
 ): OfficeFloor[] {
   return [
@@ -25,7 +28,8 @@ export function buildFloors(
       id: repo.id,
       number: i + 1,
       name: repo.displayName,
-      badgeColor: repo.badgeColor
+      badgeColor: repo.badgeColor,
+      repoIcon: repo.repoIcon
     }))
   ]
 }

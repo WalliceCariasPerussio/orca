@@ -16,7 +16,8 @@ import {
   drawWallSign,
   type DepthDrawable,
   type OfficeProjection,
-  type OfficeScene
+  type OfficeScene,
+  type SignIcon
 } from './office-scene'
 import type { WorldPoint } from './office-walker'
 import { drawWallClock } from './office-wall-clock'
@@ -42,6 +43,8 @@ export type BuildingFrame = {
   widthPx: number
   heightPx: number
   sign: string
+  /** The project's icon before the sign's name. */
+  signIcon: SignIcon | null
   /** Written on a project floor's whiteboard so it reads as the team board; null in the lobby. */
   boardLabel: string | null
   doorOpen: number
@@ -91,7 +94,7 @@ export function drawBuildingFrame(context: CanvasRenderingContext2D, frame: Buil
   }
   drawOfficeScene(context, frame.scene, projection, frame.widthPx, frame.heightPx, extras)
   drawWindows(context, projection, daylight)
-  drawWallSign(context, projection, { ...ROOM_SIGN, text: frame.sign })
+  drawWallSign(context, projection, { ...ROOM_SIGN, text: frame.sign, icon: frame.signIcon })
   drawWallClock(context, projection, frame.time)
   if (frame.boardLabel) {
     drawBoardLabel(context, projection, frame.boardLabel)

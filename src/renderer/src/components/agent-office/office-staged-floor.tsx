@@ -11,8 +11,22 @@ import { useOfficeCast } from './use-office-cast'
 // Why: shared by the office's fixtures, which may not import each other.
 
 export const stagedRepos: Repo[] = [
-  { id: 'www', path: 'F:/www', displayName: 'www', badgeColor: '#6b7280', addedAt: 1 },
-  { id: 'mesa', path: 'F:/MesaLocal', displayName: 'MesaLocal', badgeColor: '#3b82f6', addedAt: 2 },
+  {
+    id: 'www',
+    path: 'F:/www',
+    displayName: 'www',
+    badgeColor: '#6b7280',
+    repoIcon: { type: 'emoji', emoji: '🌐' },
+    addedAt: 1
+  },
+  {
+    id: 'mesa',
+    path: 'F:/MesaLocal',
+    displayName: 'MesaLocal',
+    badgeColor: '#3b82f6',
+    repoIcon: { type: 'lucide', name: 'Gauge' },
+    addedAt: 2
+  },
   { id: 'banca', path: 'F:/banca', displayName: 'banca', badgeColor: '#16a34a', addedAt: 3 }
 ]
 

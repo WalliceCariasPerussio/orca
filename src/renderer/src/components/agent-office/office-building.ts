@@ -5,6 +5,7 @@ import type { OfficeBuildingSetup, OfficeHover } from './office-building-setup'
 import { isElevatorTile } from './office-elevator'
 import { ElevatorTrip } from './office-elevator-trip'
 import { FloorCrew } from './office-floor-crew'
+import { floorSignIcon } from './office-floor-icons'
 import { callingFloor, rememberFloorId, type OfficeFloor } from './office-floors'
 import { FrameLoop, type FrameResult } from './office-frame-loop'
 import { frameAt, type PetSprite } from './office-pet-sprite'
@@ -295,6 +296,7 @@ export class OfficeBuilding {
       widthPx: this.widthPx,
       heightPx: this.heightPx,
       sign: this.floor.number === 0 ? this.setup.lobbySign.toUpperCase() : this.floor.name,
+      signIcon: floorSignIcon(this.floor),
       boardLabel: this.floor.number === 0 ? null : this.setup.teamBoardLabel.toUpperCase(),
       doorOpen: this.trip.doorOpen,
       indicator: this.trip.indicator,
