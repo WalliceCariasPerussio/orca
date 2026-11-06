@@ -47,18 +47,6 @@ function FloorTallyChips({ tally }: { tally: FloorTally | undefined }): React.JS
   )
 }
 
-// Why: like a real panel, a floor's number rides there; 0 or the lobby's letter goes down.
-function floorForKey(
-  floors: readonly OfficeFloor[],
-  key: string,
-  lobbyShort: string
-): OfficeFloor | undefined {
-  if (key === '0' || key.toLowerCase() === lobbyShort.toLowerCase()) {
-    return floors.find((floor) => floor.number === 0)
-  }
-  return /^[1-9]$/.test(key) ? floors.find((floor) => String(floor.number) === key) : undefined
-}
-
 /** Buttons inside the elevator car, top floor first like the building itself. */
 export default function ElevatorPanel({
   floors,
@@ -83,12 +71,6 @@ export default function ElevatorPanel({
           event.preventDefault()
           event.stopPropagation()
           onChoose(currentFloorId)
-          return
-        }
-        const floor = floorForKey(floors, event.key, lobbyShort)
-        if (floor) {
-          event.preventDefault()
-          onChoose(floor.id)
         }
       }}
     >

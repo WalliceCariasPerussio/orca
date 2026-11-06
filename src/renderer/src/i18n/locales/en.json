@@ -19408,7 +19408,7 @@
         },
         "visit": {
           "button": "Go to who needs you ({{value0}})",
-          "hint": "Takes the elevator if needed, walks up to the agent's desk and opens its terminal. Click again, or press N, for the next one."
+          "hint": "Takes the elevator if needed, walks up to the agent's desk and opens its terminal. Click again for the next one."
         },
         "shop": {
           "title": "Pet shop",
@@ -19426,7 +19426,7 @@
           "loading": "Loading pets…"
         },
         "building": {
-          "label": "Agent Office. Arrow keys walk, Enter calls the elevator, N goes to who needs you; in the elevator, a floor number rides there.",
+          "label": "Agent Office. Arrow keys walk, Enter calls the elevator.",
           "hint": "Click the floor to walk. Click the elevator to change floors. Click an agent to open its terminal.",
           "floorHint": "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team. Click a free desk to hire an agent.",
           "openTerminal": "click to open the terminal",
