@@ -7,6 +7,7 @@ import { agentsWith, fakeAgents, StaffedFloor, stagedRepos, waitFor } from './of
 
 const TURN_MS = 6000
 const NOW = Date.now()
+const MINUTE = 60_000
 
 const thoughts = new Map([
   ['pane-0', 'Editando office-roaming.ts'],
@@ -153,6 +154,19 @@ export const remoteHostTip = defineFixture({
         thought="Rodando pnpm test"
         model="gpt-5.5-codex"
         asked="Roda os testes do cache e me fala se algum quebrou depois da mudança no TTL."
+        status={{
+          paneKey: 'pane-4',
+          state: 'working',
+          prompt: '',
+          updatedAt: NOW,
+          stateStartedAt: NOW - 20 * MINUTE,
+          stateHistory: [
+            { state: 'working', prompt: '', startedAt: NOW - 50 * MINUTE },
+            { state: 'waiting', prompt: '', startedAt: NOW - 38 * MINUTE },
+            { state: 'working', prompt: '', startedAt: NOW - 33 * MINUTE },
+            { state: 'done', prompt: '', startedAt: NOW - 26 * MINUTE }
+          ]
+        }}
       />
     </div>
   )

@@ -20058,6 +20058,10 @@
           "paused": "pausada",
           "more": "e mais {{value0}}",
           "hint": "clique para abrir as Automações"
+        },
+        "timeline": {
+          "hourAgo": "1 h atrás",
+          "now": "agora"
         }
       }
     },

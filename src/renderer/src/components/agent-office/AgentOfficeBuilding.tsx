@@ -304,6 +304,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
           hover={hovered}
           thought={hoveredKey ? thoughts.get(hoveredKey) : undefined}
           model={hoveredKey ? statusByPaneKey[hoveredKey]?.model : undefined}
+          status={hoveredKey ? statusByPaneKey[hoveredKey] : undefined}
           asked={hoveredCard?.lastUserMessage}
           automations={projectAutomations.get(currentFloor.id)}
         />

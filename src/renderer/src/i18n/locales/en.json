@@ -19457,6 +19457,10 @@
           "paused": "paused",
           "more": "and {{value0}} more",
           "hint": "click to open Automations"
+        },
+        "timeline": {
+          "hourAgo": "1 h ago",
+          "now": "now"
         }
       }
     },

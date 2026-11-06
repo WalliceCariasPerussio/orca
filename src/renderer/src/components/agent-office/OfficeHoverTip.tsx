@@ -2,7 +2,9 @@ import { translate } from '@/i18n/i18n'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
 import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
 import type { Automation } from '../../../../shared/automations-types'
+import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import AutomationsTipBody from './AutomationsTipBody'
+import StateTimeline from './StateTimeline'
 import type { DashboardBucket, DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import { isNapping, type OfficeAgent } from './office-agents'
 import type { OfficeHover } from './office-building-setup'
@@ -72,6 +74,7 @@ export default function OfficeHoverTip({
   thought,
   model,
   asked,
+  status,
   automations = NO_AUTOMATIONS
 }: {
   hover: OfficeHover
@@ -81,6 +84,8 @@ export default function OfficeHoverTip({
   model?: string
   /** What you last asked it. */
   asked?: string
+  /** Its live status in Orca, with the states it went through. */
+  status?: AgentStatusEntry
   /** The floor's automations, for its wall calendar. */
   automations?: readonly Automation[]
 }): React.JSX.Element {
@@ -129,6 +134,7 @@ export default function OfficeHoverTip({
           {thought ? (
             <p className="mt-1 line-clamp-3 border-t border-border pt-1 italic">{thought}</p>
           ) : null}
+          {status ? <StateTimeline entry={status} seenAt={hover.seenAt} /> : null}
         </>
       ) : hover.kind === 'sector' ? (
         <>
