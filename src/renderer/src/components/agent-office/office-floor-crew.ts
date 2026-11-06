@@ -13,9 +13,12 @@ import {
   staffTiles,
   type FloorStaff,
   type StaffHit,
-  type StaffLabels
+  type StaffLabels,
+  vacantDeskAt,
+  vacantDeskTip
 } from './office-floor-staff'
 import { layoutForFloor, type OfficeFloor } from './office-floors'
+import type { FloorWorkspace } from './office-floor-workspaces'
 import type { PetSprite } from './office-pet-sprite'
 import { Roaming } from './office-roaming'
 import { plaqueAt, plaqueTip } from './office-sectors'
@@ -55,6 +58,7 @@ export class FloorCrew {
   private readonly roaming = new Roaming()
   private readonly departures = new Departures()
   private thoughts: OfficeThoughts = new Map()
+  private workspaces: readonly FloorWorkspace[] = []
   private floorId: string | null = null
 
   constructor(private readonly labels: StaffLabels) {}
@@ -74,7 +78,7 @@ export class FloorCrew {
       this.departures.clear()
       this.floorId = floor.id
     }
-    this.staff = staffFloor(agents, floor.id, sprites, this.labels)
+    this.staff = staffFloor(agents, floor.id, sprites, this.labels, this.workspaces)
     const layout = layoutForFloor(floor, this.staff.deskCount)
     const scene = buildOfficeScene(layout, staffTiles(this.staff))
     const now = performance.now()
@@ -88,6 +92,11 @@ export class FloorCrew {
     this.floorId = null
     this.roaming.clear()
     this.departures.clear()
+  }
+
+  /** The project's workspaces, so the ones nobody works in still keep a desk; reseat after. */
+  setWorkspaces(workspaces: readonly FloorWorkspace[]): void {
+    this.workspaces = workspaces
   }
 
   /** Returns false when nothing anyone thinks has changed, so the frame can stay as it is. */
@@ -117,7 +126,7 @@ export class FloorCrew {
     return desk ? { col: desk.seat.tile.col - 1, row: desk.seat.tile.row } : null
   }
 
-  /** Agents win over the plaques they stand behind; spots are the receptionist, team board and free desks. */
+  /** Agents win over the plaques they stand behind, then empty workspace desks; spots are the receptionist, team board and free desks. */
   targetAt(inLobby: boolean, world: WorldPoint): OfficeTarget | null {
     const hit = staffAt(this.staff, world, (desk) => this.roaming.stance(desk))
     if (hit) {
@@ -127,6 +136,11 @@ export class FloorCrew {
     if (plaque?.worktreeId) {
       const { worktreeId, label: worktreeName } = plaque
       return { kind: 'sector', worktreeId, worktreeName, tip: plaqueTip(plaque) }
+    }
+    const vacant = vacantDeskAt(this.staff, world)
+    if (vacant) {
+      const { worktreeId, name: worktreeName } = vacant.workspace
+      return { kind: 'sector', worktreeId, worktreeName, tip: vacantDeskTip(vacant) }
     }
     const spot = spotAt(inLobby, world) ?? freeDeskAt(this.staff, world)
     return spot ? { kind: 'spot', spot } : null

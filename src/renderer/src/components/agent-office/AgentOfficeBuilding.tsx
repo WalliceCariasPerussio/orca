@@ -20,6 +20,7 @@ import { OfficeBuilding } from './office-building'
 import { handleOfficeKey } from './office-keys'
 import type { OfficeHover } from './office-building-setup'
 import { useFloorTeams } from './office-floor-teams'
+import { useFloorWorkspaces } from './office-floor-workspaces'
 import { isManagerArriving, useFloorManagers } from './office-managers'
 import { buildFloors, LOBBY_FLOOR_ID, needingYou, readRememberedFloorId } from './office-floors'
 import { useStaffPets } from './office-staff-pets'
@@ -83,13 +84,14 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   )
   const dressedByKind = useOfficeAgents(snapshot.cards, staffPets, managerKeys)
   const agents = useTeamPets(dressedByKind, floorTeams)
+  const workspaces = useFloorWorkspaces(snapshot.workspaces)
   const tallies = useMemo(() => tallyByFloor(agents), [agents])
   const waiting = useMemo(() => needingYou(agents, floors, floorId), [agents, floors, floorId])
   const visits = useRef(0)
   const agentWindow = useOfficeAgentWindow(snapshot.cards)
   const openAgentWindow = agentWindow.open
 
-  const latest = useRef({
+  const live = {
     floors,
     floorId,
     remembered,
@@ -99,33 +101,24 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     hireLabel,
     managerLabel,
     agents,
+    workspaces,
     thoughts,
     cast,
     snapshot,
     managers
-  })
+  }
+  const latest = useRef(live)
   useLayoutEffect(() => {
-    latest.current = {
-      floors,
-      floorId,
-      remembered,
-      lobbyName,
-      lobbyShort,
-      boardLabel,
-      hireLabel,
-      managerLabel,
-      agents,
-      thoughts,
-      cast,
-      snapshot,
-      managers
-    }
+    latest.current = live
   })
-  // Why: the workspace's host tells twins on several hosts apart; any of its agents' cards knows it.
+  // Why: the workspace's host tells twins on several hosts apart; an empty desk has no card to ask.
   const openWorkspaceMenu = useCallback((worktreeId: string, at: { left: number; top: number }) => {
     setHovered(null)
-    const card = latest.current.snapshot.cards.find((c) => c.worktreeId === worktreeId)
-    setWorkspaceMenu({ worktreeId, executionHostId: card?.executionHostId, ...at })
+    const { cards, workspaces: all = [] } = latest.current.snapshot
+    const executionHostId =
+      cards.find((c) => c.worktreeId === worktreeId)?.executionHostId ??
+      all.find((w) => w.worktreeId === worktreeId)?.executionHostId
+    setWorkspaceMenu({ worktreeId, executionHostId, ...at })
   }, [])
 
   const castReady = cast !== null
@@ -189,7 +182,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         }
       }
     })
-    building.setAgents(setup.agents)
+    building.setAgents(setup.agents, setup.workspaces)
     building.setThoughts(setup.thoughts)
     buildingRef.current = building
     let measured = ''
@@ -229,8 +222,8 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   }, [floors])
 
   useEffect(() => {
-    buildingRef.current?.setAgents(agents)
-  }, [agents])
+    buildingRef.current?.setAgents(agents, workspaces)
+  }, [agents, workspaces])
 
   useEffect(() => {
     buildingRef.current?.setThoughts(thoughts)

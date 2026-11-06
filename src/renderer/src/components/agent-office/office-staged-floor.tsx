@@ -4,6 +4,7 @@ import type { Repo } from '../../../../shared/repo-types'
 import type { OfficeAgent } from './office-agents'
 import { OfficeBuilding } from './office-building'
 import { buildFloors } from './office-floors'
+import type { FloorWorkspace } from './office-floor-workspaces'
 import { DEFAULT_STAFF_PETS, roleForAgentType } from './office-staff-pets'
 import type { OfficeThoughts } from './office-thoughts'
 import { useOfficeCast } from './use-office-cast'
@@ -61,6 +62,8 @@ export function agentsWith(changes: Record<string, DashboardBucket>): OfficeAgen
   return fakeAgents().map((agent) => ({ ...agent, bucket: changes[agent.key] ?? agent.bucket }))
 }
 
+const NO_WORKSPACES: FloorWorkspace[] = []
+
 // Why: live agents come from terminals a fixture cannot start, so this drives the building directly.
 export function StaffedFloor({
   agents = fakeAgents(),
@@ -68,7 +71,8 @@ export function StaffedFloor({
   thenAfterMs = 200,
   visit,
   thoughts,
-  automations = 0
+  automations = 0,
+  workspaces = NO_WORKSPACES
 }: {
   agents?: OfficeAgent[]
   /** Agents a moment later, to catch the office reacting to a change. */
@@ -81,6 +85,8 @@ export function StaffedFloor({
   thoughts?: OfficeThoughts
   /** How many automations the floor's project has, for its wall calendar. */
   automations?: number
+  /** The project's workspaces, for the desks of those with nobody in them. */
+  workspaces?: FloorWorkspace[]
 }): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { cast } = useOfficeCast(Object.values(DEFAULT_STAFF_PETS))
@@ -107,13 +113,13 @@ export function StaffedFloor({
       onSpotClick: () => {},
       onSectorClick: () => {}
     })
-    building.setAgents(agents)
+    building.setAgents(agents, workspaces)
     building.setThoughts(thoughts ?? new Map())
     building.setAutomationCounts(new Map([['mesa', automations]]))
     building.attach(canvas, 960, 600, 1)
     const later = window.setTimeout(() => {
       if (then) {
-        building.setAgents(then)
+        building.setAgents(then, workspaces)
       }
       if (visit) {
         building.visit(visit)

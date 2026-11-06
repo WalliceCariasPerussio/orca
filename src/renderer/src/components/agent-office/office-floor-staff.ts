@@ -17,6 +17,7 @@ import {
   type DeskHelpers
 } from './office-desk-helpers'
 import { FIGURE_HEIGHT } from './office-figures'
+import type { FloorWorkspace } from './office-floor-workspaces'
 import type { PetSprite } from './office-pet-sprite'
 import type { DepthDrawable, OfficeProjection } from './office-scene'
 import { groupBySector, plaqueDrawables, sectorColor, type DeskPlaque } from './office-sectors'
@@ -33,11 +34,16 @@ export type FloorStaff = {
   helpers: DeskHelpers
   /** Desks nobody sits at; clicking one hires an agent for this floor's project. */
   freeDesks: DeskSeat[]
+  /** Desks of the floor's workspaces with no agent here, kept so you still see them. */
+  vacant: VacantDesk[]
   /** Each desk's plaque: the workspace of the agent at it, or the hiring sign. */
   plaques: DeskPlaque[]
   /** Nobody manages this floor yet; clicking the manager's desk hires one. */
   managerFree: boolean
 }
+
+/** A workspace's desk with nobody at it; clicking it opens the workspace's menu. */
+export type VacantDesk = { seat: DeskSeat; workspace: FloorWorkspace }
 
 /** What the plaques of free desks and of the manager's desk say. */
 export type StaffLabels = { hire: string; manager: string }
@@ -50,6 +56,7 @@ export const EMPTY_STAFF: FloorStaff = {
   desks: [],
   helpers: { standing: [], more: [] },
   freeDesks: [],
+  vacant: [],
   plaques: [],
   managerFree: false
 }
@@ -61,9 +68,13 @@ export function staffFloor(
   agents: readonly OfficeAgent[],
   floorId: string,
   sprites: ReadonlyMap<string, PetSprite>,
-  labels: StaffLabels
+  labels: StaffLabels,
+  workspaces: readonly FloorWorkspace[] = []
 ): FloorStaff {
-  const onFloor = agents.filter((agent) => agent.floorId === floorId && !agent.parentKey)
+  const here = agents.filter((agent) => agent.floorId === floorId)
+  const onFloor = here.filter((agent) => !agent.parentKey)
+  const staffed = new Set(here.map((agent) => agent.worktreeId))
+  const empty = workspaces.filter((w) => w.floorId === floorId && !staffed.has(w.worktreeId))
   const manager = onFloor.find((agent) => agent.manager)
   const atDesks = onFloor.filter((agent) => agent !== manager)
   const desks = seatAgents(groupBySector(atDesks), sprites)
@@ -74,9 +85,10 @@ export function staffFloor(
     desks.push({ agent: manager, seat: MANAGER_SEAT, sprite: bossSprite })
   }
   const taken = new Set(seatTileKeys(desks.filter(({ agent }) => agent !== manager)))
-  const freeDesks = deskSeats(atDesks.length).filter(
-    ({ tile }) => !taken.has(`${tile.col},${tile.row}`)
-  )
+  const deskCount = atDesks.length + empty.length
+  const open = deskSeats(deskCount).filter(({ tile }) => !taken.has(`${tile.col},${tile.row}`))
+  const vacant = empty.slice(0, open.length).map((workspace, i) => ({ seat: open[i], workspace }))
+  const freeDesks = open.slice(vacant.length)
   const plaques = [
     ...desks.map(({ agent, seat }) => ({
       desk: seat.desk,
@@ -85,6 +97,14 @@ export function staffFloor(
       color: sectorColor(agent.worktreeId),
       review: agent.review,
       status: agent.workspaceStatus
+    })),
+    ...vacant.map(({ seat, workspace }) => ({
+      desk: seat.desk,
+      worktreeId: workspace.worktreeId,
+      label: workspace.name,
+      color: sectorColor(workspace.worktreeId),
+      review: workspace.review,
+      status: workspace.status
     })),
     ...freeDesks.map((seat) => ({ desk: seat.desk, label: labels.hire, color: null })),
     {
@@ -95,10 +115,11 @@ export function staffFloor(
     }
   ]
   return {
-    deskCount: atDesks.length,
+    deskCount,
     desks,
     helpers: helpersFor(desks, agents, sprites),
     freeDesks,
+    vacant,
     plaques,
     managerFree: !manager
   }
@@ -123,6 +144,16 @@ export function freeDeskAt(staff: FloorStaff, world: WorldPoint): SpotHit | null
   return staff.managerFree && onDesk(MANAGER_SEAT, world)
     ? { id: 'managerDesk', front: MANAGER_SEAT.tile, tip: tipOver(MANAGER_SEAT) }
     : null
+}
+
+/** The workspace whose empty desk is under a point, chair included. */
+export function vacantDeskAt(staff: FloorStaff, world: WorldPoint): VacantDesk | null {
+  return staff.vacant.find(({ seat }) => onDesk(seat, world)) ?? null
+}
+
+/** Where the label of an empty workspace desk points: over its chair. */
+export function vacantDeskTip({ seat }: VacantDesk): WorldPoint {
+  return tipOver(seat)
 }
 
 export function staffTiles(staff: FloorStaff): string[] {

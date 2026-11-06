@@ -84,8 +84,11 @@ function subagentBucket(dotState: DashboardCardDotState): DashboardBucket | null
   }
 }
 
-function workspaceStatusOf(card: DashboardCard): OfficeWorkspaceStatus | undefined {
-  const { workspaceStatusId: id, workspaceStatusLabel: label, workspaceStatusColor: color } = card
+/** The workspace's column on Orca's board, from a card or a workspace of the snapshot. */
+export function workspaceStatusOf(
+  source: Pick<DashboardCard, 'workspaceStatusId' | 'workspaceStatusLabel' | 'workspaceStatusColor'>
+): OfficeWorkspaceStatus | undefined {
+  const { workspaceStatusId: id, workspaceStatusLabel: label, workspaceStatusColor: color } = source
   return id && label ? { id, label, color } : undefined
 }
 

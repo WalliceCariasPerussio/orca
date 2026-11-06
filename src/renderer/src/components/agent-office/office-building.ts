@@ -5,6 +5,7 @@ import type { OfficeBuildingSetup, OfficeHover } from './office-building-setup'
 import { isElevatorTile } from './office-elevator'
 import { ElevatorTrip } from './office-elevator-trip'
 import { FloorCrew, type OfficeTarget } from './office-floor-crew'
+import type { FloorWorkspace } from './office-floor-workspaces'
 import { floorSignIcon } from './office-floor-icons'
 import { callingFloor, rememberFloorId, type OfficeFloor } from './office-floors'
 import { FrameLoop, type FrameResult } from './office-frame-loop'
@@ -113,9 +114,10 @@ export class OfficeBuilding {
     this.loop.invalidate()
   }
 
-  /** Every agent in the building; each sits on its project's floor. */
-  setAgents(agents: OfficeAgent[]): void {
+  /** Every agent in the building, each on its project's floor, and the workspaces that keep a desk there. */
+  setAgents(agents: OfficeAgent[], workspaces: readonly FloorWorkspace[]): void {
     this.agents = agents
+    this.crew.setWorkspaces(workspaces)
     this.crew.notice(agents)
     this.seatStaff()
     this.loop.invalidate()
