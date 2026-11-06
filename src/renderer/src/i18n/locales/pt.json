@@ -20062,6 +20062,11 @@
         "timeline": {
           "hourAgo": "1 h atrás",
           "now": "agora"
+        },
+        "crew": {
+          "managing": "Gerenciando {{value0}} agentes",
+          "task": "Tarefa: {{value0}}",
+          "managedBy": "Gerenciado por {{value0}}"
         }
       }
     },

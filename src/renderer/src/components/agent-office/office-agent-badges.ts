@@ -1,7 +1,7 @@
 import { createElement, type ReactElement } from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
-import { Server } from 'lucide-react'
+import { ClipboardList, Server, Workflow } from 'lucide-react'
 import { AgentTypeIcon } from '@/lib/agent-type-icon'
 import { BUBBLE_FILL, BUBBLE_OUTLINE } from './office-bubbles'
 
@@ -128,6 +128,12 @@ export function agentBadge(agentType: string, zoom: number): HTMLCanvasElement |
     () => createElement(AgentTypeIcon, { agentType, size: ICON_PX }),
     zoom
   )
+}
+
+/** Orca's orchestration icon on an agent that dispatches work, a task list on one doing a task. */
+export function crewBadge(kind: 'managing' | 'managed', zoom: number): HTMLCanvasElement | null {
+  const icon = kind === 'managing' ? Workflow : ClipboardList
+  return badgeFor(`crew:${kind}`, () => createElement(icon, { size: ICON_PX }), zoom)
 }
 
 /** The server badge the Agent Dashboard puts on an agent running on an SSH or remote Orca host. */

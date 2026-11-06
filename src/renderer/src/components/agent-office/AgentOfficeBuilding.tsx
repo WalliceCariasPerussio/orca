@@ -14,6 +14,7 @@ import ReceptionDesk from './ReceptionDesk'
 import OfficeWorkspaceMenu, { type OfficeWorkspaceMenuAt } from './OfficeWorkspaceMenu'
 import StaffPetsPanel from './StaffPetsPanel'
 import { officeAgentsFrom, tallyByFloor } from './office-agents'
+import { crewRoleKey, crewRolesFrom } from './office-crew-roles'
 import { automationCounts, useProjectAutomations } from './office-automations'
 import { OfficeBuilding } from './office-building'
 import type { OfficeHover } from './office-building-setup'
@@ -77,7 +78,12 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     () => thoughtsFrom(snapshot.cards, statusByPaneKey),
     [snapshot.cards, statusByPaneKey]
   )
-  const freshAgents = officeAgentsFrom(snapshot.cards, staffPets)
+  const dispatchByPaneKey = useAppStore((s) => s.runtimeAgentOrchestrationByPaneKey)
+  const crewRoles = useMemo(
+    () => crewRolesFrom(snapshot.cards, statusByPaneKey, dispatchByPaneKey),
+    [snapshot.cards, statusByPaneKey, dispatchByPaneKey]
+  )
+  const freshAgents = officeAgentsFrom(snapshot.cards, staffPets, crewRoles)
   // Why: the snapshot rebuilds on every status tick; reseat the floor only when what it shows changes.
   const agentsKey = freshAgents
     .map((a) =>
@@ -94,6 +100,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         a.verdict ?? '',
         a.monitoring ? 'm' : '',
         a.remoteHost ?? '',
+        crewRoleKey(a.crew),
         a.review ? `${a.review.number}${a.review.state}` : '',
         a.workspaceStatus ? `${a.workspaceStatus.id}=${a.workspaceStatus.label}` : '',
         a.workspaceStatus?.color ?? '',

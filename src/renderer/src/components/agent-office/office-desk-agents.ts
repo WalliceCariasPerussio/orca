@@ -1,5 +1,5 @@
 import { GREMLIN_PET_ID } from '../pet/pet-models'
-import { agentBadge, BADGE_SIZE, remoteHostBadge } from './office-agent-badges'
+import { agentBadge, BADGE_SIZE, crewBadge, remoteHostBadge } from './office-agent-badges'
 import type { OfficeAgent } from './office-agents'
 import { bubbleFor } from './office-bubbles'
 import { mugDrawable } from './office-coffee'
@@ -104,7 +104,11 @@ export function deskAgentDrawables(
     drawables.push({ zY: BUBBLE_Z, draw: (c) => c.drawImage(bubble, x, y) })
     // Why: the kind badge stays with the desk, so bubbles of agents side by side on the sofa do not collide.
     const badges = atDesk
-      ? [agentBadge(agent.agentType, zoom), agent.remoteHost ? remoteHostBadge(zoom) : null]
+      ? [
+          agentBadge(agent.agentType, zoom),
+          ...(agent.crew ? [crewBadge(agent.crew.kind, zoom)] : []),
+          ...(agent.remoteHost ? [remoteHostBadge(zoom)] : [])
+        ]
       : []
     badges.forEach((badge, slot) => {
       if (badge) {

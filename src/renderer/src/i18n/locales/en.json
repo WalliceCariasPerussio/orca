@@ -19461,6 +19461,11 @@
         "timeline": {
           "hourAgo": "1 h ago",
           "now": "now"
+        },
+        "crew": {
+          "managing": "Managing {{value0}} agents",
+          "task": "Task: {{value0}}",
+          "managedBy": "Managed by {{value0}}"
         }
       }
     },

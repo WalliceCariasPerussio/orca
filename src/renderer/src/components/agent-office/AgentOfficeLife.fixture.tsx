@@ -3,6 +3,7 @@ import { makeAutomation } from '../automations/automations-page-fixtures'
 import type { DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import HireDeskMenu, { type HireChoice } from './HireDeskMenu'
 import OfficeHoverTip from './OfficeHoverTip'
+import type { OfficeAgent } from './office-agents'
 import { agentsWith, fakeAgents, StaffedFloor, stagedRepos, waitFor } from './office-staged-floor'
 
 const TURN_MS = 6000
@@ -253,6 +254,41 @@ export const automationsTip = defineFixture({
       <OfficeHoverTip
         hover={{ kind: 'spot', spot: 'automations', seenAt: NOW, left: 350, top: 170 }}
         automations={AUTOMATIONS}
+      />
+    </div>
+  )
+})
+
+const CREW = new Map<string, OfficeAgent['crew']>([
+  ['pane-0', { kind: 'managing', count: 2 }],
+  ['pane-4', { kind: 'managed', by: 'claude 1', task: 'Corrigir o cache do login' }],
+  ['pane-5', { kind: 'managed', by: 'claude 1', task: 'Escrever os testes do cache' }]
+])
+
+export const orchestration = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => (
+    <StaffedFloor agents={fakeAgents().map((agent) => ({ ...agent, crew: CREW.get(agent.key) }))} />
+  ),
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+})
+
+export const crewTip = defineFixture({
+  width: 700,
+  render: () => (
+    <div className="relative h-40">
+      <OfficeHoverTip
+        hover={{
+          kind: 'agent',
+          agent: { ...fakeAgents()[4], crew: CREW.get('pane-4') },
+          seenAt: NOW,
+          left: 350,
+          top: 140
+        }}
       />
     </div>
   )

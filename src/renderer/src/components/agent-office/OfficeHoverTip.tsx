@@ -4,6 +4,7 @@ import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentati
 import type { Automation } from '../../../../shared/automations-types'
 import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import AutomationsTipBody from './AutomationsTipBody'
+import CrewRoleLine from './CrewRoleLine'
 import StateTimeline from './StateTimeline'
 import type { DashboardBucket, DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import { isNapping, type OfficeAgent } from './office-agents'
@@ -111,6 +112,9 @@ export default function OfficeHoverTip({
           </p>
           {hover.agent.remoteHost ? (
             <p className="truncate text-muted-foreground">{hover.agent.remoteHost}</p>
+          ) : null}
+          {hover.agent.crew ? (
+            <CrewRoleLine role={hover.agent.crew} agentName={hover.agent.name} />
           ) : null}
           <p className="text-muted-foreground">
             {stateLabel(hover.agent, hover.seenAt)}

@@ -5,6 +5,7 @@ import type {
   DashboardCardDotState,
   DashboardCardReview
 } from '../../../../shared/dashboard-snapshot'
+import type { OfficeCrewRole } from './office-crew-roles'
 import { roleForAgentType, type StaffPets } from './office-staff-pets'
 import type { OfficeWorkspaceStatus } from './office-status-notes'
 
@@ -37,6 +38,8 @@ export type OfficeAgent = {
   monitoring?: boolean
   /** The SSH or remote Orca host it runs on, as the Agent Dashboard names it; unset when local. */
   remoteHost?: string
+  /** Its place in an Orca orchestration, when it has one. */
+  crew?: OfficeCrewRole
   /** The agent at a desk that spawned this one; it then stands by that desk instead of its own. */
   parentKey?: string
   /** Running sub-agents without a terminal, standing by this agent's desk. */
@@ -112,7 +115,8 @@ function rootOf(
 /** Agents with a terminal; a spawned one whose parent is in the office stands by it while it runs. */
 export function officeAgentsFrom(
   cards: readonly DashboardCard[],
-  staffPets: StaffPets
+  staffPets: StaffPets,
+  crewRoles: ReadonlyMap<string, OfficeCrewRole> = new Map()
 ): OfficeAgent[] {
   const byKey = new Map(cards.map((card) => [card.paneKey, card]))
   return cards
@@ -143,6 +147,7 @@ export function officeAgentsFrom(
           verdict: endedBadly(card),
           monitoring: card.bucket === 'working' && card.workingMode === 'monitoring',
           remoteHost: dashboardHostTooltipLabel(card) ?? undefined,
+          crew: crewRoles.get(card.paneKey),
           parentKey,
           subagents
         }
