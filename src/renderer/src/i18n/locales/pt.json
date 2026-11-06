@@ -20036,7 +20036,9 @@
           "floorHint": "Clique no chão para andar. Clique num agente para ver o terminal dele. Clique no quadro branco para escolher a equipe do andar. Clique numa mesa vaga para contratar um agente.",
           "openTerminal": "clique para abrir o terminal",
           "workspace": "Workspace: {{value0}}",
-          "napping": "Cochilando"
+          "napping": "Cochilando",
+          "asleep": "Dormindo com o workspace",
+          "wake": "clique para acordar"
         },
         "elevator": {
           "title": "Elevador",
@@ -20049,8 +20051,7 @@
           "label": "Escritório de Agentes"
         },
         "sector": {
-          "hint": "clique para o menu do workspace: status, notas, suspender…",
-          "hint": "clique para o menu do workspace: status, notas, suspender…"
+          "hint": "clique para acordar, pôr para dormir, contratar ou desmontar; botão direito abre o menu do workspace no Orca"
         },
         "automations": {
           "none": "Nenhuma neste projeto ainda.",
@@ -20082,6 +20083,17 @@
           "prompt": "Você é o gerente do projeto {{value0}} no Orca. Eu sou o dono: vou dizer o que precisa ser feito ou perguntar como as coisas estão. Para cada pedido, quebre o trabalho em tarefas e passe para workers do Orca pela orquestração do Orca (carregue antes a skill de orquestração, ou rode `orca skills get orchestration` para ler o guia dela). Use este mesmo workspace para tarefas pequenas e workspaces novos para as independentes. Acompanhe os workers, responda às dúvidas deles ou traga para mim, e me avise quando cada tarefa terminar. Não escreva o código você mesmo, a não ser que eu peça. Comece se apresentando em uma linha e espere o meu primeiro pedido.",
           "noSkillShort": "sem a skill de orquestração",
           "arriving": "Um gerente acabou de ser contratado e está a caminho. Ele senta aqui em instantes."
+        },
+        "desk": {
+          "asleep": "Dormindo na mesa: {{value0}}",
+          "atWork": "Trabalhando aqui: {{value0}}",
+          "open": "Aberto, sem ninguém na mesa",
+          "empty": "Ninguém aqui, luzes apagadas",
+          "wake": "Acordar todo mundo",
+          "sleep": "Pôr o workspace para dormir",
+          "hire": "Contratar para esta mesa:",
+          "more": "Mais opções do workspace",
+          "delete": "Desmontar a mesa (excluir)…"
         }
       }
     },

@@ -19435,7 +19435,9 @@
           "floorHint": "Click the floor to walk. Click an agent to see its terminal. Click the whiteboard to pick this floor's team. Click a free desk to hire an agent.",
           "openTerminal": "click to open the terminal",
           "workspace": "Workspace: {{value0}}",
-          "napping": "Dozing"
+          "napping": "Dozing",
+          "asleep": "Asleep with its workspace",
+          "wake": "click to wake it up"
         },
         "elevator": {
           "title": "Elevator",
@@ -19448,8 +19450,7 @@
           "label": "Agent Office"
         },
         "sector": {
-          "hint": "click for this workspace's menu: status, notes, sleep…",
-          "hint": "click for this workspace's menu: status, notes, sleep…"
+          "hint": "click to wake, sleep, hire or clear out; right-click for Orca's workspace menu"
         },
         "automations": {
           "none": "None for this project yet.",
@@ -19481,6 +19482,17 @@
           "prompt": "You are the manager of the {{value0}} project in Orca. I am the owner: I will tell you what needs to be done, or ask where things stand. For each request, break the work into tasks and hand them to Orca workers through Orca orchestration (load the orchestration skill first, or run `orca skills get orchestration` to read its guide). Use this same workspace for small tasks and new workspaces for independent ones. Follow the workers, answer their questions or bring them to me, and tell me when each task is done. Don't write the code yourself unless I ask. Start by introducing yourself in one line, then wait for my first request.",
           "noSkillShort": "no orchestration skill",
           "arriving": "A manager was just hired and is on the way. It sits down here in a moment."
+        },
+        "desk": {
+          "asleep": "Asleep at the desk: {{value0}}",
+          "atWork": "At work here: {{value0}}",
+          "open": "Open, with nobody at the desk",
+          "empty": "Nobody here, lights off",
+          "wake": "Wake everyone up",
+          "sleep": "Put the workspace to sleep",
+          "hire": "Hire for this desk:",
+          "more": "More workspace options",
+          "delete": "Clear out the desk (delete)…"
         }
       }
     },

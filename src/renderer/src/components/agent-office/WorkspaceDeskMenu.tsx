@@ -52,11 +52,11 @@ export default function WorkspaceDeskMenu({
   }
   const state =
     sleepers > 0
-      ? translate('auto.components.agentOffice.desk.asleep', '{{value0}} asleep at their desks', {
+      ? translate('auto.components.agentOffice.desk.asleep', 'Asleep at the desk: {{value0}}', {
           value0: sleepers
         })
       : atWork > 0
-        ? translate('auto.components.agentOffice.desk.atWork', '{{value0}} at work here', {
+        ? translate('auto.components.agentOffice.desk.atWork', 'At work here: {{value0}}', {
             value0: atWork
           })
         : sleepable
@@ -119,29 +119,31 @@ export default function WorkspaceDeskMenu({
         </button>
       ) : null}
       {workspace && agents.length > 0 ? (
-        <div className="flex items-center gap-1 px-2 py-0.5">
-          <span className="min-w-0 flex-1 truncate text-sm">
-            {translate('auto.components.agentOffice.desk.hire', 'Hire for this desk')}
-          </span>
-          {agents.map((agent) => {
-            const label = translate(
-              'auto.components.agentOffice.hire.launch',
-              '{{value0}} in {{value1}}',
-              { value0: formatAgentTypeLabel(agent), value1: workspace.worktreeName }
-            )
-            return (
-              <Button
-                key={agent}
-                variant="ghost"
-                size="icon-xs"
-                title={label}
-                aria-label={label}
-                onClick={act(() => hireAgentIn(workspace, agent))}
-              >
-                <AgentTypeIcon agentType={agent} size={14} />
-              </Button>
-            )
-          })}
+        <div className="px-2 py-1">
+          <p className="text-xs text-muted-foreground">
+            {translate('auto.components.agentOffice.desk.hire', 'Hire for this desk:')}
+          </p>
+          <div className="mt-0.5 flex flex-wrap gap-0.5">
+            {agents.map((agent) => {
+              const label = translate(
+                'auto.components.agentOffice.hire.launch',
+                '{{value0}} in {{value1}}',
+                { value0: formatAgentTypeLabel(agent), value1: workspace.worktreeName }
+              )
+              return (
+                <Button
+                  key={agent}
+                  variant="ghost"
+                  size="icon-xs"
+                  title={label}
+                  aria-label={label}
+                  onClick={act(() => hireAgentIn(workspace, agent))}
+                >
+                  <AgentTypeIcon agentType={agent} size={14} />
+                </Button>
+              )
+            })}
+          </div>
         </div>
       ) : null}
       <div className="my-1 border-t border-border" />
