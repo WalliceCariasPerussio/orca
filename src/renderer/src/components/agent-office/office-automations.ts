@@ -9,10 +9,13 @@ export function useProjectAutomations(): ReadonlyMap<string, readonly Automation
   const [byProject, setByProject] = useState<ReadonlyMap<string, readonly Automation[]>>(new Map())
   useEffect(() => {
     let cancelled = false
+    // Why: a slow earlier list must not land after a newer one and bring back what changed.
+    let latest = 0
     const load = (): void => {
+      const request = ++latest
       listAutomationsForTarget({ kind: 'local' }).then(
         (automations) => {
-          if (cancelled) {
+          if (cancelled || request !== latest) {
             return
           }
           const next = new Map<string, Automation[]>()

@@ -5,6 +5,7 @@ import type { Automation } from '../../../../shared/automations-types'
 import type { AgentStatusEntry } from '../../../../shared/agent-status/contracts/agent-status-types'
 import AutomationsTipBody from './AutomationsTipBody'
 import CrewRoleLine from './CrewRoleLine'
+import { crewRoleKey } from './office-crew-roles'
 import StateTimeline from './StateTimeline'
 import type { DashboardBucket, DashboardCardReview } from '../../../../shared/dashboard-snapshot'
 import { isNapping, type OfficeAgent } from './office-agents'
@@ -64,9 +65,13 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
   if (hover.kind === 'sector') {
     return `sector:${hover.worktreeName}:${place}`
   }
-  return hover.kind === 'agent'
-    ? `agent:${hover.agent.key}:${hover.agent.bucket}:${hover.agent.verdict ?? ''}:${hover.agent.monitoring ? 'm' : ''}:${hover.agent.name}:${hover.agent.worktreeName}:${place}`
-    : `spot:${hover.spot}:${place}`
+  if (hover.kind === 'spot') {
+    return `spot:${hover.spot}:${place}`
+  }
+  const { agent } = hover
+  const state = `${agent.bucket}:${agent.verdict ?? ''}:${agent.monitoring ? 'm' : ''}`
+  const workspace = `${agent.worktreeName}:${agent.workspaceStatus?.label ?? ''}:${agent.review?.number ?? ''}${agent.review?.state ?? ''}`
+  return `agent:${agent.key}:${state}:${agent.name}:${workspace}:${agent.remoteHost ?? ''}:${crewRoleKey(agent.crew)}:${place}`
 }
 
 /** The label over whatever the pointer rests on: an agent, the team board or a free desk. */

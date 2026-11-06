@@ -18,16 +18,21 @@ function toneOf(state: AgentStatusEntry['state'], interrupted: boolean | undefin
   }
 }
 
-// Why: Orca keeps each agent's last states with when each began; the current one runs until now.
+// Why: Orca logs states in the order they happened, but a start can be restamped earlier; keep the
+// log's order and never let a stretch begin before the one it followed.
 function stretchesOf(entry: AgentStatusEntry, now: number): Stretch[] {
   const start = now - WINDOW_MS
   const states = [
-    ...entry.stateHistory.map((past) => ({ ...past })),
+    ...entry.stateHistory,
     { state: entry.state, startedAt: entry.stateStartedAt, interrupted: entry.interrupted }
-  ].toSorted((a, b) => a.startedAt - b.startedAt)
+  ]
+  const starts: number[] = []
+  for (const state of states) {
+    starts.push(Math.max(state.startedAt, starts.at(-1) ?? Number.NEGATIVE_INFINITY))
+  }
   return states.flatMap((state, i) => {
-    const from = Math.max(start, state.startedAt)
-    const to = Math.min(now, states[i + 1]?.startedAt ?? now)
+    const from = Math.max(start, starts[i])
+    const to = Math.min(now, starts[i + 1] ?? now)
     return to > from ? [{ from, to, tone: toneOf(state.state, state.interrupted) }] : []
   })
 }

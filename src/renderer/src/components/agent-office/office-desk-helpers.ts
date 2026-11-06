@@ -116,7 +116,8 @@ export function helperDrawables(
   helpers.standing.forEach(({ agent, sprite, feet }, i) => {
     const acted = agent.bucket === 'idle' ? undefined : sprite.states?.[agent.bucket]
     const strip = acted ?? sprite.idle
-    const moving = agent.bucket === 'working' || (agent.bucket === 'attention' && acted)
+    const moving =
+      (agent.bucket === 'working' && !agent.monitoring) || (agent.bucket === 'attention' && acted)
     const shown = moving ? frameAt(strip, now + i * STAGGER_MS) : null
     if (shown) {
       holdMs = Math.min(holdMs, shown.nextInMs)

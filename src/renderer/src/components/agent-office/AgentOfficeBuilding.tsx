@@ -272,6 +272,10 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         )}
         className="absolute inset-0 size-full cursor-pointer outline-none"
         onPointerDown={(event) => {
+          // Why: a right-click opens the workspace menu on contextmenu, and must not walk or open a window too.
+          if (event.button !== 0) {
+            return
+          }
           const box = event.currentTarget.getBoundingClientRect()
           setDeskAnchor(null)
           setHireAt(null)
