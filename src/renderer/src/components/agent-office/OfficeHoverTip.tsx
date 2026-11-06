@@ -89,6 +89,7 @@ export default function OfficeHoverTip({
             {translate('auto.components.agentOffice.building.workspace', 'Workspace: {{value0}}', {
               value0: hover.agent.worktreeName
             })}
+            {hover.agent.workspaceStatus ? ` · ${hover.agent.workspaceStatus.label}` : ''}
             {hover.agent.review
               ? ` · ${reviewLabel(hover.agent.review)} #${hover.agent.review.number}`
               : ''}

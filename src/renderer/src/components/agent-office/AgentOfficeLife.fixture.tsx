@@ -155,3 +155,23 @@ export const remoteHostTip = defineFixture({
     </div>
   )
 })
+
+const BOARD_STATUSES = new Map([
+  ['feat/login-social', { id: 'in-progress', label: 'Em andamento', color: 'conductor-progress' }],
+  ['fix/cache', { id: 'in-review', label: 'Em revisão', color: 'conductor-review' }],
+  ['main', { id: 'completed', label: 'Pronto', color: 'conductor-done' }]
+])
+
+export const workspaceStatuses = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => (
+    <StaffedFloor
+      agents={fakeAgents().map((agent) => ({
+        ...agent,
+        workspaceStatus: BOARD_STATUSES.get(agent.worktreeName)
+      }))}
+    />
+  ),
+  interact: (frame) => waitFor(frame, 'canvas[data-ready]')
+})

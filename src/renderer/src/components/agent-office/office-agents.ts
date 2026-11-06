@@ -6,6 +6,7 @@ import type {
   DashboardCardReview
 } from '../../../../shared/dashboard-snapshot'
 import { roleForAgentType, type StaffPets } from './office-staff-pets'
+import type { OfficeWorkspaceStatus } from './office-status-notes'
 
 /** A sub-agent working inside its parent's terminal, with no pane of its own. */
 export type OfficeSubagent = { key: string; name: string; bucket: DashboardBucket }
@@ -25,6 +26,8 @@ export type OfficeAgent = {
   worktreeName: string
   /** The workspace's pull request, when it has one. */
   review?: DashboardCardReview
+  /** The workspace's column on Orca's workspace board. */
+  workspaceStatus?: OfficeWorkspaceStatus
   startedAt: number
   /** When it entered its current state; 0 when unknown. */
   since: number
@@ -74,6 +77,11 @@ function subagentBucket(dotState: DashboardCardDotState): DashboardBucket | null
     case 'idle':
       return null
   }
+}
+
+function workspaceStatusOf(card: DashboardCard): OfficeWorkspaceStatus | undefined {
+  const { workspaceStatusId: id, workspaceStatusLabel: label, workspaceStatusColor: color } = card
+  return id && label ? { id, label, color } : undefined
 }
 
 function endedBadly(card: DashboardCard): OfficeVerdict | undefined {
@@ -129,6 +137,7 @@ export function officeAgentsFrom(
           worktreeId: card.worktreeId,
           worktreeName: card.worktreeName,
           review: card.review,
+          workspaceStatus: workspaceStatusOf(card),
           startedAt: card.startedAt,
           since: card.stateChangedAt,
           verdict: endedBadly(card),

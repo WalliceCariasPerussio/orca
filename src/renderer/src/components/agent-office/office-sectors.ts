@@ -8,6 +8,7 @@ import {
   type OfficeProjection
 } from './office-scene'
 import { toss } from './office-team-draw'
+import { statusNoteDrawable, type OfficeWorkspaceStatus } from './office-status-notes'
 import type { TilePoint } from './office-walker'
 import { TILE_SIZE } from './vendor/pixel-agents/webview-ui/src/office/types'
 
@@ -17,6 +18,8 @@ export type DeskPlaque = {
   label: string
   color: string | null
   review?: DashboardCardReview
+  /** The workspace's column on Orca's board, shown as a sticky note on the desk. */
+  status?: OfficeWorkspaceStatus
 }
 
 /** The plaque on a desk's front panel, in world pixels from the desk's corner. */
@@ -103,8 +106,11 @@ export function plaqueDrawables(
   plaques: readonly DeskPlaque[],
   projection: OfficeProjection
 ): DepthDrawable[] {
-  return plaques.map((plaque) => ({
-    zY: plaque.desk.row * TILE_SIZE + DESK_DEPTH,
-    draw: (context) => drawPlaque(context, projection, plaque)
-  }))
+  return plaques.flatMap((plaque) => [
+    {
+      zY: plaque.desk.row * TILE_SIZE + DESK_DEPTH,
+      draw: (context: CanvasRenderingContext2D) => drawPlaque(context, projection, plaque)
+    },
+    ...(plaque.status ? [statusNoteDrawable(plaque.desk, plaque.status, projection)] : [])
+  ])
 }

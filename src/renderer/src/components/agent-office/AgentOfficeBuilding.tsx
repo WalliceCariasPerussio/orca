@@ -80,6 +80,8 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
         a.monitoring ? 'm' : '',
         a.remoteHost ?? '',
         a.review ? `${a.review.number}${a.review.state}` : '',
+        a.workspaceStatus ? `${a.workspaceStatus.id}=${a.workspaceStatus.label}` : '',
+        a.workspaceStatus?.color ?? '',
         a.parentKey ?? '',
         ...a.subagents.map((s) => `${s.key}=${s.bucket}=${s.name}`)
       ].join(':')
