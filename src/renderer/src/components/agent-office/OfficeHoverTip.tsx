@@ -28,6 +28,9 @@ function stateLabel(agent: OfficeAgent, time: number): string {
   if (verdict === 'interrupted') {
     return translate('auto.components.AgentStateDot.interrupted', 'Interrupted')
   }
+  if (agent.monitoring && bucket === 'working') {
+    return translate('auto.components.AgentStateDot.monitoring', 'Monitoring background tasks')
+  }
   return bucketLabel(bucket)
 }
 
@@ -51,7 +54,7 @@ export function hoverKey(hover: OfficeHover | null | undefined): string | null {
   }
   const place = `${hover.left},${hover.top}`
   return hover.kind === 'agent'
-    ? `agent:${hover.agent.key}:${hover.agent.bucket}:${hover.agent.verdict ?? ''}:${hover.agent.name}:${hover.agent.worktreeName}:${place}`
+    ? `agent:${hover.agent.key}:${hover.agent.bucket}:${hover.agent.verdict ?? ''}:${hover.agent.monitoring ? 'm' : ''}:${hover.agent.name}:${hover.agent.worktreeName}:${place}`
     : `spot:${hover.spot}:${place}`
 }
 

@@ -11,6 +11,7 @@ export const BUBBLE_OUTLINE = BUBBLE_WAITING_SPRITE[0][1]
 const NEEDS_YOU = '#D9483B'
 const RESTING = '#8A93A3'
 const FAILED = '#C2410C'
+const WATCHING = '#2F6FDB'
 
 // Why: pixel-agents' waiting bubble is the frame; the glyph inside tells the state at a glance.
 function withGlyph(color: string, pixels: [number, number][]): SpriteData {
@@ -88,14 +89,38 @@ const NAPPING_BUBBLE = withGlyph(RESTING, [
   [4, 7]
 ])
 
+// Why: an open eye reads as "watching" next to the typing dots of real work.
+const MONITORING_BUBBLE = withGlyph(WATCHING, [
+  [4, 3],
+  [5, 3],
+  [6, 3],
+  [3, 4],
+  [5, 4],
+  [7, 4],
+  [2, 5],
+  [5, 5],
+  [8, 5],
+  [3, 6],
+  [7, 6],
+  [4, 7],
+  [5, 7],
+  [6, 7]
+])
+
+/** Dozing off when idle, or only watching background tasks while working. */
+export type BubblePose = 'napping' | 'monitoring' | null
+
 /** Sprite shown over an agent's head; a turn that failed or was stopped shows that instead of ✓. */
 export function bubbleFor(
   bucket: DashboardBucket,
   verdict?: OfficeVerdict,
-  napping = false
+  pose: BubblePose = null
 ): SpriteData {
-  if (napping) {
+  if (pose === 'napping') {
     return NAPPING_BUBBLE
+  }
+  if (pose === 'monitoring' && bucket === 'working') {
+    return MONITORING_BUBBLE
   }
   if (verdict === 'failed') {
     return FAILED_BUBBLE

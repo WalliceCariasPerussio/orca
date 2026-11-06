@@ -20005,7 +20005,8 @@
           "delegate": "Delegando",
           "plan": "Planejando",
           "allow": "Permitir: {{value0}}?",
-          "thinking": "Pensando…"
+          "thinking": "Pensando…",
+          "monitoring": "De olho nas tarefas em segundo plano…"
         },
         "visit": {
           "button": "Ir até quem precisa de você ({{value0}})",

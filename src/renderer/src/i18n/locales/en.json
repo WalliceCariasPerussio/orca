@@ -19404,7 +19404,8 @@
           "delegate": "Delegating",
           "plan": "Planning",
           "allow": "Allow: {{value0}}?",
-          "thinking": "Thinking…"
+          "thinking": "Thinking…",
+          "monitoring": "Keeping an eye on background tasks…"
         },
         "visit": {
           "button": "Go to who needs you ({{value0}})",

@@ -98,3 +98,20 @@ export const comesAndGoes = defineFixture({
     await new Promise((resolve) => setTimeout(resolve, 1100))
   }
 })
+
+export const monitoring = defineFixture({
+  width: 960,
+  store: { repos: stagedRepos },
+  render: () => (
+    <StaffedFloor
+      agents={fakeAgents().map((agent) =>
+        agent.key === 'pane-0' || agent.key === 'pane-5' ? { ...agent, monitoring: true } : agent
+      )}
+      thoughts={new Map([['pane-0', 'De olho nas tarefas em segundo plano…']])}
+    />
+  ),
+  interact: async (frame) => {
+    await waitFor(frame, 'canvas[data-ready]')
+    await untilCloud()
+  }
+})

@@ -93,7 +93,12 @@ export function thoughtOf(card: DashboardCard, entry: AgentStatusEntry | undefin
       return (
         toolThought(entry) ||
         spoken(card, entry) ||
-        translate('auto.components.agentOffice.thought.thinking', 'Thinking…')
+        (card.workingMode === 'monitoring'
+          ? translate(
+              'auto.components.agentOffice.thought.monitoring',
+              'Keeping an eye on background tasks…'
+            )
+          : translate('auto.components.agentOffice.thought.thinking', 'Thinking…'))
       )
     case 'done':
       return spoken(card, entry)

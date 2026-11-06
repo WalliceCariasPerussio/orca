@@ -29,6 +29,8 @@ export type OfficeAgent = {
   since: number
   /** Set when its finished turn failed or was stopped, so it neither shows ✓ nor cheers. */
   verdict?: OfficeVerdict
+  /** Working, but only keeping an eye on background tasks (Orca's "monitoring"). */
+  monitoring?: boolean
   /** The agent at a desk that spawned this one; it then stands by that desk instead of its own. */
   parentKey?: string
   /** Running sub-agents without a terminal, standing by this agent's desk. */
@@ -127,6 +129,7 @@ export function officeAgentsFrom(
           startedAt: card.startedAt,
           since: card.stateChangedAt,
           verdict: endedBadly(card),
+          monitoring: card.bucket === 'working' && card.workingMode === 'monitoring',
           parentKey,
           subagents
         }
