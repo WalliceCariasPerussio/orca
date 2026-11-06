@@ -1,25 +1,36 @@
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { launchAgentBackgroundSession } from '@/lib/launch-agent-background-session'
 import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { DashboardWorkspace } from '../../../../shared/dashboard-snapshot'
-import { parseExecutionHostId } from '../../../../shared/execution-host'
-import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
+import { requestBackgroundTerminalWorktreeMount } from '../terminal/background-terminal-worktree-mount'
 
-/** The runtime that owns a workspace: this computer's, or the remote Orca host it lives on. */
-export function hostOf(workspace: DashboardWorkspace): RuntimeClientTarget {
-  const host = parseExecutionHostId(workspace.executionHostId)
-  return host?.kind === 'runtime'
-    ? { kind: 'environment', environmentId: host.environmentId }
-    : { kind: 'local' }
+// Why: a terminal in a workspace you have not opened has no live preview until its tab mounts;
+// mount just that tab behind the office, as Orca does for its own background starts.
+export function mountAgentTerminal(worktreeId: string, tabId: string | null | undefined): void {
+  if (tabId) {
+    requestBackgroundTerminalWorktreeMount({ worktreeId, tabIds: [tabId] })
+  }
 }
 
-// Why: `orca agent launch` runs on the workspace's own host and leaves you where you are, here in the office.
+/**
+ * Starts an agent in a workspace without leaving the office, the way Orca's automations start
+ * theirs: its tab exists from the start and its terminal mounts in the background, so the agent
+ * shows up at its desk and its window shows it live. Returns the agent's pane.
+ */
 export async function launchAgentInWorkspace(
   workspace: DashboardWorkspace,
-  agent: TuiAgent
-): Promise<void> {
-  await callRuntimeRpc(hostOf(workspace), 'agent.launch', {
+  agent: TuiAgent,
+  options: { prompt?: string; title?: string } = {}
+): Promise<string> {
+  const result = await launchAgentBackgroundSession({
     agent,
-    target: { kind: 'existing', worktree: `id:${workspace.worktreeId}` },
-    presentation: 'background'
+    worktreeId: workspace.worktreeId,
+    ...(options.prompt ? { prompt: options.prompt } : {}),
+    ...(options.title ? { title: options.title } : {})
   })
+  if (!result) {
+    throw new Error('agent_office_launch_failed')
+  }
+  // Why: the office follows the agent through Orca's live status, not a remote output stream.
+  result.releaseRuntimeObservers()
+  return result.paneKey
 }

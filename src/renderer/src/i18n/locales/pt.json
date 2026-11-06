@@ -20080,7 +20080,8 @@
           "noWorkspace": "O workspace principal deste projeto não está aberto no Orca.",
           "hireFailed": "Não deu para iniciar {{value0}} como gerente de {{value1}}.",
           "prompt": "Você é o gerente do projeto {{value0}} no Orca. Eu sou o dono: vou dizer o que precisa ser feito ou perguntar como as coisas estão. Para cada pedido, quebre o trabalho em tarefas e passe para workers do Orca pela orquestração do Orca (carregue antes a skill de orquestração, ou rode `orca skills get orchestration` para ler o guia dela). Use este mesmo workspace para tarefas pequenas e workspaces novos para as independentes. Acompanhe os workers, responda às dúvidas deles ou traga para mim, e me avise quando cada tarefa terminar. Não escreva o código você mesmo, a não ser que eu peça. Comece se apresentando em uma linha e espere o meu primeiro pedido.",
-          "noSkillShort": "sem a skill de orquestração"
+          "noSkillShort": "sem a skill de orquestração",
+          "arriving": "Um gerente acabou de ser contratado e está a caminho. Ele senta aqui em instantes."
         }
       }
     },

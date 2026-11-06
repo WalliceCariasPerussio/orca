@@ -15,6 +15,7 @@ import ManagerChoice from './ManagerChoice'
 export default function ManagerDeskMenu({
   anchor,
   projectName,
+  arriving,
   workspace,
   agents,
   onHire,
@@ -22,6 +23,8 @@ export default function ManagerDeskMenu({
 }: {
   anchor: { left: number; top: number }
   projectName: string
+  /** A manager was just hired here and is still starting; hiring another would make two. */
+  arriving: boolean
   /** The project's main workspace, where the manager works; null when Orca has none open. */
   workspace: DashboardWorkspace | null
   /** The agents that workspace's host can start. */
@@ -77,7 +80,14 @@ export default function ManagerDeskMenu({
           'A manager takes your requests, splits them into tasks and hands them to Orca workers through orchestration. Click it later to brief it in its terminal.'
         )}
       </p>
-      {workspace && agents.length > 0 ? (
+      {arriving ? (
+        <p className="px-2 py-1 text-xs">
+          {translate(
+            'auto.components.agentOffice.manager.arriving',
+            'A manager was just hired and is on the way. It sits down here in a moment.'
+          )}
+        </p>
+      ) : workspace && agents.length > 0 ? (
         <>
           <p className="px-2 pt-1 text-xs text-muted-foreground">
             {translate(

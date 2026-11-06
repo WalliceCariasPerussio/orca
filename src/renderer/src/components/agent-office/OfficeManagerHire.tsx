@@ -5,20 +5,26 @@ import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentati
 import type { DashboardSnapshot } from '../../../../shared/dashboard-snapshot'
 import ManagerDeskMenu from './ManagerDeskMenu'
 import type { OfficeFloor } from './office-floors'
-import { launchManager, mainWorkspaceOf, newManagerPane } from './office-managers'
+import { launchManager, mainWorkspaceOf } from './office-managers'
 
 /** Hiring a floor's manager at its empty desk: pick the agent, and it starts in the main workspace. */
 export default function OfficeManagerHire({
   anchor,
+  arriving,
   floor,
   snapshot,
+  onHiring,
   onHired,
   onClose
 }: {
   anchor: { left: number; top: number }
+  /** A manager was just hired here and is still starting. */
+  arriving: boolean
   floor: OfficeFloor
   snapshot: DashboardSnapshot
-  /** The pane the new manager will have, held for its desk before it shows up. */
+  /** A manager is starting: hold its desk so a second click does not hire another. */
+  onHiring: () => void
+  /** The new manager's pane, once Orca has started it. */
   onHired: (paneKey: string) => void
   onClose: () => void
 }): React.JSX.Element {
@@ -33,6 +39,7 @@ export default function OfficeManagerHire({
     <ManagerDeskMenu
       anchor={anchor}
       projectName={floor.name}
+      arriving={arriving}
       workspace={workspace}
       agents={agents}
       onClose={onClose}
@@ -40,9 +47,8 @@ export default function OfficeManagerHire({
         if (!workspace) {
           return
         }
-        const paneKey = newManagerPane()
-        onHired(paneKey)
-        launchManager(workspace, agent, floor.name, paneKey).catch(() => {
+        onHiring()
+        launchManager(workspace, agent, floor.name).then(onHired, () => {
           toast.error(
             translate(
               'auto.components.agentOffice.manager.hireFailed',

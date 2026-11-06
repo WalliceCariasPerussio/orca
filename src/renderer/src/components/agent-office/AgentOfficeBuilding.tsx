@@ -17,9 +17,10 @@ import StaffPetsPanel from './StaffPetsPanel'
 import { tallyByFloor } from './office-agents'
 import { automationCounts, useProjectAutomations } from './office-automations'
 import { OfficeBuilding } from './office-building'
+import { handleOfficeKey } from './office-keys'
 import type { OfficeHover } from './office-building-setup'
 import { useFloorTeams } from './office-floor-teams'
-import { useFloorManagers } from './office-managers'
+import { isManagerArriving, useFloorManagers } from './office-managers'
 import { buildFloors, LOBBY_FLOOR_ID, needingYou, readRememberedFloorId } from './office-floors'
 import { useStaffPets } from './office-staff-pets'
 import { useTeamPets } from './office-team-draw'
@@ -28,17 +29,6 @@ import { hireChoices } from './office-hire-choices'
 import { useOfficeAgentWindow } from './use-office-agent-window'
 import { useOfficeAgents } from './use-office-agents'
 import { useOfficeCast } from './use-office-cast'
-
-const STEP_KEYS: Record<string, [number, number]> = {
-  ArrowUp: [0, -1],
-  ArrowDown: [0, 1],
-  ArrowLeft: [-1, 0],
-  ArrowRight: [1, 0],
-  w: [0, -1],
-  s: [0, 1],
-  a: [-1, 0],
-  d: [1, 0]
-}
 
 function hireInNewWorkspace(floorId: string): void {
   const repo = useAppStore.getState().repos.find((r) => r.id === floorId)
@@ -65,13 +55,20 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
   const [hovered, setHovered] = useState<OfficeHover | null>(null)
   const [workspaceMenu, setWorkspaceMenu] = useState<OfficeWorkspaceMenuAt | null>(null)
   const [hireAt, setHireAt] = useState<{ left: number; top: number } | null>(null)
-  const [managerAt, setManagerAt] = useState<{ left: number; top: number } | null>(null)
+  const [managerAt, setManagerAt] = useState<{
+    left: number
+    top: number
+    arriving: boolean
+  } | null>(null)
   const pointerAt = useRef({ left: 0, top: 0 })
   const [windowOpen, setWindowOpen] = useState<'staff' | 'shop' | 'team' | null>(null)
   const [staffPets, assignStaffPet] = useStaffPets()
   const [floorTeams, setFloorTeam] = useFloorTeams()
   const [managers, setManager] = useFloorManagers()
-  const managerKeys = useMemo(() => new Set(Object.values(managers)), [managers])
+  const managerKeys = useMemo(
+    () => new Set(Object.values(managers).flatMap(({ paneKey }) => (paneKey ? [paneKey] : []))),
+    [managers]
+  )
   const { cast, failed } = useOfficeCast([
     ...Object.values(staffPets),
     ...Object.values(floorTeams).flat()
@@ -104,7 +101,8 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
     agents,
     thoughts,
     cast,
-    snapshot
+    snapshot,
+    managers
   })
   useLayoutEffect(() => {
     latest.current = {
@@ -119,7 +117,8 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       agents,
       thoughts,
       cast,
-      snapshot
+      snapshot,
+      managers
     }
   })
   // Why: the workspace's host tells twins on several hosts apart; any of its agents' cards knows it.
@@ -166,7 +165,11 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       onSpotClick: (spot) => {
         if (spot === 'managerDesk') {
           setHovered(null)
-          setManagerAt(pointerAt.current)
+          const { managers: hired, floorId: here } = latest.current
+          setManagerAt({
+            ...pointerAt.current,
+            arriving: isManagerArriving(hired[here], Date.now())
+          })
         } else if (spot === 'automations') {
           setHovered(null)
           useAppStore.getState().openAutomationsPage()
@@ -280,16 +283,7 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
             openWorkspaceMenu(worktreeId, at)
           }
         }}
-        onKeyDown={(event) => {
-          const step = STEP_KEYS[event.key]
-          if (step) {
-            event.preventDefault()
-            buildingRef.current?.step(step[0], step[1])
-          } else if (event.key === 'Enter') {
-            event.preventDefault()
-            buildingRef.current?.callElevator()
-          }
-        }}
+        onKeyDown={(event) => handleOfficeKey(event, buildingRef.current)}
       />
       {hovered ? (
         <OfficeHoverTip
@@ -325,12 +319,14 @@ export default function AgentOfficeBuilding(): React.JSX.Element {
       {managerAt && currentFloor.number !== 0 ? (
         <OfficeManagerHire
           anchor={managerAt}
+          arriving={managerAt.arriving}
           floor={currentFloor}
           snapshot={snapshot}
-          onHired={(paneKey) => {
+          onHiring={() => {
             setManagerAt(null)
-            setManager(currentFloor.id, paneKey)
+            setManager(currentFloor.id, null)
           }}
+          onHired={(paneKey) => setManager(currentFloor.id, paneKey)}
           onClose={() => setManagerAt(null)}
         />
       ) : null}

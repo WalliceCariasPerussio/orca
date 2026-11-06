@@ -328,6 +328,7 @@ export const managerDeskMenu = defineFixture({
       <ManagerDeskMenu
         anchor={{ left: 350, top: 300 }}
         projectName="MesaLocal"
+        arriving={false}
         workspace={workspaceOf('main')}
         agents={['claude', 'codex', 'opencode']}
         onHire={() => {}}

@@ -19479,7 +19479,8 @@
           "noWorkspace": "This project's main workspace isn't open in Orca.",
           "hireFailed": "Could not start {{value0}} as the manager of {{value1}}.",
           "prompt": "You are the manager of the {{value0}} project in Orca. I am the owner: I will tell you what needs to be done, or ask where things stand. For each request, break the work into tasks and hand them to Orca workers through Orca orchestration (load the orchestration skill first, or run `orca skills get orchestration` to read its guide). Use this same workspace for small tasks and new workspaces for independent ones. Follow the workers, answer their questions or bring them to me, and tell me when each task is done. Don't write the code yourself unless I ask. Start by introducing yourself in one line, then wait for my first request.",
-          "noSkillShort": "no orchestration skill"
+          "noSkillShort": "no orchestration skill",
+          "arriving": "A manager was just hired and is on the way. It sits down here in a moment."
         }
       }
     },

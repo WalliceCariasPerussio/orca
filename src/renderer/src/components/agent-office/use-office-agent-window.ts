@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useAppStore } from '@/store'
 import type { DashboardCard, DashboardRevealAgentArgs } from '../../../../shared/dashboard-snapshot'
 import { revealDashboardAgent } from '../dashboard/reveal-dashboard-agent'
+import { mountAgentTerminal } from './office-agent-launch'
 
 export type OfficeAgentWindow = {
   /** The agent shown in the window; null keeps it closed. */
@@ -46,6 +47,10 @@ export function useOfficeAgentWindow(cards: readonly DashboardCard[]): OfficeAge
     const found = cardsRef.current.find((c) => c.paneKey === paneKey)
     if (!found) {
       return
+    }
+    // Why: an agent started in the background has no live terminal until its tab mounts.
+    if (!found.ptyId) {
+      mountAgentTerminal(found.worktreeId, found.tabId)
     }
     useAppStore.getState().acknowledgeAgents([paneKey], undefined, 'explicit')
     clickAcked.current = { paneKey, stateChangedAt: found.stateChangedAt }
